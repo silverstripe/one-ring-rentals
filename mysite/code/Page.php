@@ -30,8 +30,22 @@ class Page_Controller extends ContentController {
 
 	public function init() {
 		parent::init();
-		// You can include any CSS or JS required by your project here.
-		// See: http://doc.silverstripe.org/framework/en/reference/requirements
+		Requirements::css("http://fonts.googleapis.com/css?family=Raleway:300,500,900%7COpen+Sans:400,700,400italic");
+		Requirements::css("{$this->ThemeDir()}/css/bootstrap.min.css");
+		Requirements::css("{$this->ThemeDir()}/css/style.css");
+
+		Requirements::javascript("{$this->ThemeDir()}/js/common/modernizr.js");
+		Requirements::javascript("{$this->ThemeDir()}/js/common/jquery-1.11.1.min.js");
+		Requirements::javascript("{$this->ThemeDir()}/js/common/bootstrap.min.js");
+		Requirements::javascript("{$this->ThemeDir()}/js/common/bootstrap-datepicker.js");
+		Requirements::javascript("{$this->ThemeDir()}/js/common/chosen.min.js");
+		Requirements::javascript("{$this->ThemeDir()}/js/common/bootstrap-checkbox.js");
+		Requirements::javascript("{$this->ThemeDir()}/js/common/nice-scroll.js");
+		Requirements::javascript("{$this->ThemeDir()}/js/common/jquery-browser.js");
+		Requirements::javascript("{$this->ThemeDir()}/js/scripts.js");
+
+
+
 	}
 
 }
