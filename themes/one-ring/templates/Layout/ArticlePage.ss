@@ -15,16 +15,22 @@
 				
 				<div class="blog-bottom-info">
 					<ul>
-						<li><i class="fa fa-calendar"></i> July 30, 2014</li>
+						<li><i class="fa fa-calendar"></i> $Date.Long</li>
 						<li><i class="fa fa-comments-o"></i> 3 Comments</li>
 						<li><i class="fa fa-tags"></i> Properties, Prices, best deals</li>
 					</ul>
 					
-					<div id="post-author"><i class="fa fa-pencil"></i> By John Doe</div>
+					<div id="post-author"><i class="fa fa-pencil"></i> By $Author</div>
 				</div>
 				
 				<div class="post-content">
-					<div class="highlight-bold">Phasellus suscipit aliquam nisl et porttitor. Suspendisse potenti. Fusce libero velit, tristique eu mauris vitae, convallis facilisis sapien. Mauris urna diam, fringilla sit amet eleifend id, commodo ac lorem. Curabitur at erat justo.</div>
+					<div class="highlight-bold">
+						<% if $Teaser %>
+							$Teaser
+						<% else %>
+							$Content.FirstSentence
+						<% end_if %>
+					</div>
 					
 					<div class="divider"></div>
 					
