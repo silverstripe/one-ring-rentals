@@ -1,6 +1,6 @@
 ## Working with data relationships
 
-So far, we've only been dealing with content that is directly associated with a page, but often times, pages are made up of content that is stored outside the page, and merely brought into the page through a data relationship. We saw a bit of this in Lesson #7 when we created `$has_one` relationships to `File` objects. All of the information about the file is stored on its own table, and the page merely references it. We're going to dig a bit deeper into relational data in this lesson by introducing some plurality using `$has_many` and `$many_many`.
+So far, we've only been dealing with content that is directly associated with a page, but often times, pages are made up of content that is stored outside the page, and merely brought into the page through a data relationship. We saw a bit of this in Lesson #7 when we created `$has_one` relationships to `File` objects. All of the information about the file is stored on its own table, and the page merely references it. We're going to dig a bit deeper into relational data in this lesson by introducing some plural relationships with `$has_many` and `$many_many`.
 
 ### What we'll cover
 * Creating a generic DataObject
@@ -84,6 +84,8 @@ This follows the same convention as the `$has_one` we used in a previous lesson.
 
 Run a `dev/build` and see if you get any database changes. If you don't see any, **that is the expected result!** Why? Well, we're not quite done yet.
 
+#### Reciprocating the $has_many
+
 `$has_many` relationships are a bit of a special case because they have to be *reciprocated* by the related class. While every `RegionsPage` has many `Regions`, it is also true that every `Region` has *one* `RegionPage` that contains it. Regions cannot belong to any more than one region page.
 
 This is important, because the database mutation happens at the `$has_one` level, not the `$has_many`. What will really bind these two objects together is a `Region` object providing one, and only one, `RegionsPageID`. Let's make that update now.
@@ -106,6 +108,7 @@ Typically, reciprocal `has_one`'s like this can just be named after the parent c
 Now let's run a `dev/build` and see that we get a new `RegionsPageID` field.
 
 ### Introduction to GridField
+
 We've got our `$has_many` relationship defined, with a `$has_one` on the other side, and we're ready to start populating the relationship with data. For this, we'll need a need one of the workhorses of the CMS interface -- `GridField`.
 
 GridField is a highly configurable form field that allows you to manage an arbitrary table of data. In its most primitive sense, you can think of it as an abstraction of a database table, but there's much more that you can do with it. To manage our `Region` objects, we'll want a tab on the `RegionsPage` that allows us to create, read, edit, and delete associated `Region` records.
@@ -133,6 +136,8 @@ class RegionsPage extends Page {
 }
 ```
 
+#### The GridField constructor
+
 Let's take a look at the argument signature for `GridField`:
 * **'Regions'**: A required, arbitrary name for the GridField. You'll need this if you ever want to make updates to your GridField after it's been added to the FieldList.
 * **'Regions on this page'**: A title for the GridField. Should be user-friendly.
@@ -141,7 +146,8 @@ Let's take a look at the argument signature for `GridField`:
 
 Let's go back into the CMS and edit our "Regions" page. See that we have a tab now that contains a grid. Give it a try and add some test records.
 
-### Configuring the GridField
+#### Configuring the GridField
+
 As stated earlier, `GridField` is highly configurable. One of the most common customisations you'll want to make to your grid is the columns that are displayed. In this case, there are only a handful of fields, so only showing `Title` and `Description` isn't so bad, but you can imagine that if the DataObject had 10 distinct fields, we would probably want to tighten that up a bit.
 
 In our case, let's make a minor enhancement, and just add the `Photo` field to our list view. By default, only fields in the `$db` array get included. Since `Photo` is in the `$has_one`, we have to specifically include it.
@@ -162,9 +168,11 @@ class Region extends DataObject {
 
 This array maps the name of the field to the human-readable column name. We'll let the photo speak for itself and leave its column header empty.
 
-Because we changed a private static variable, we need to run ?flush to see the update to the grid. 
+Because we changed a private static variable, we need to run ?flush to see the update to the grid. How does it look? Pretty bad, right? The photo is not being resized to fit the grid. 
 
-How does it look? Pretty bad, right? The photo is not being resized to fit the grid. Fortunately, `$summary_fields` accepts more than just field names. We can provide any public method on our DataObject as a column value. Let's create a method that returns a resized photo.
+#### Using a custom getter
+
+Fortunately, `$summary_fields` accepts more than just field names. We can provide any public method on our DataObject as a column value. Let's create a method that returns a resized photo.
 
 ```php
 class Region extends DataObject {
@@ -188,13 +196,17 @@ class Region extends DataObject {
 ```
 Run `?flush` again, and see that our grid looks much cleaner now.
 
+We could have saved ourselves a lot of time by using a method that SilverStripe provides to all `Image` objects by default -- `CMSThumbnail()`. `Photo.CMSThumbnail` would have achieved a very similar result, without the fallback text *(no image)*.
+
+#### Traversing fields
+
 Another great feature of `$summary_fields` is that you can traverse relationships to get foreign fields, using a dot-separated syntax. Suppose we wanted to show the `Filename` field on the Photo:
 
 ```php
 class Region extends DataObject {
         //...
 	private static $summary_fields = array (
-		'Photo.Filename' => 'Photo (filename)',
+		'Photo.Filename' => 'Photo file name',
 		'Title' => 'Title',
 		'Description' => 'Description'
 	);
@@ -206,6 +218,8 @@ This type of syntax becomes especially useful when formatting dates, or getting 
 ### Setting up at $many_many relationship
 
 Let's turn our focus back to the `ArticlePage` now and see that each article is associated with many categories. We can imagine that in the CMS, we want a list of selectable categories, perhaps checkboxes, that are offered to each article. The first thing we'll need to do is set up a place to manage the categories. There are several different ways you can do this. It really depends on what kind of user experience you want to create, but for now, let's stick them on the ArticleHolder object, so that, conceivably, another `ArticleHolder` page could provide its own set of distinct categories.
+
+#### Managing the ArticleCategory objects
 
 *mysite/code/ArticleHolder.php*
 ```php
@@ -254,6 +268,8 @@ Notice once again that we have the reciprocal `$has_one` back to the `ArticleHol
 
 Run `dev/build` again and see that we get a new table. Edit the "Travel Guides" page in the CMS and add a few sample categories.
 
+#### Relating Articles to Categories
+
 Now that we have some categories to work with, let's relate them to the articles. Articles have many categories, as we can see on the template, so it's reasonable to assume we'll be using another `$has_many`, right?
 
 In this case, a `$has_many` is not what we want. Remember that reciprocal `$has_one` we used with `$has_many`? That declares that each related object can only belong to one parent. Once that relation is created, it can't be used anywhere else. We don't want that behaviour with categories. Once a category is claimed by an article, it should still be available to other articles. Therefore, articles have many categories, and categories have many articles. This is a `$many_many` relationship.
@@ -270,6 +286,8 @@ class ArticlePage extends Page {
 ```
 Run `dev/build` and see that we get a new table, `ArticlePage_Categories`.
 
+#### Reciprocating the $many_many
+
 Optional, but strongly recommended is a reciprocation of this relationship on the `ArticleCategory` object, using `$belongs_many_many`. This variable does not create any database mutations, but will provide an magic method to the object for getting its parent records. In this case, we know that we'll need any `ArticleCategory` object to get its articles, because our design includes a filter by category in the sidebar, so this is quite important.
 
 *mysite/code/ArticleCategory.php*
@@ -284,7 +302,11 @@ class ArticleCategory extends DataObject {
 ```
 We changed a static variable, so run `?flush`.
 
+#### $many_many vs $belongs_many_many
+
 So if both sides of the relationship have many associated records, how do you know which one gets the `$many_many` and which one is `$belongs_many_many`? Typically, the object that contains the interface gets the `$many_many`. In this case, we'll add categories to the articles using checkboxes, so that's where our `$many_many` goes. Again, the `$belongs_many_many` just provides the convenience of an accessor method for getting the articles from within a category.
+
+#### Adding checkboxes
 
 Speaking of interface, we need to add some to the `ArticlePage` object. Let's introduce `CheckboxSetField`.
 
@@ -351,6 +373,8 @@ Now let's look at adding the comma-separated category list to the articles.
 </li>
 ```
 We can use the global template variable `$Last` to tell us whether we're in the last iteration of the loop, which will determine whether or not we show the comma.  Also available are `$First`, `$Even`, `$Odd`, and many others.
+
+#### Using a custom getter
 
 If we reload the page, this all looks great, but we're not done yet. The categories are also displayed on `ArticleHolder.ss` and `HomePage.ss`. This is a lot of template syntax to keep replicating. We could put this into an include, but it would be better if the `ArticlePage` objects could render a comma-separated list of categories themselves. Let's create a new method that does this.
 
