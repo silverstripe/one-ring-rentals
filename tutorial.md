@@ -339,7 +339,7 @@ Now that our relational data is all in place, it's time to display it on the tem
 		<% end_loop %>
 	</div>
 ```
-This should all be pretty straightforward, but notice that we're skipping over the links. We'll address that in a future lesson.
+Notice that we're skipping over the links. We'll address that in a future lesson.
 
 Now let's look at adding the comma-separated category list to the articles.
 
