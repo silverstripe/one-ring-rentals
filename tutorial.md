@@ -364,7 +364,7 @@ class ArticlePage extends Page {
 	}
 }
 ```
-We check the existence of categories with the `exists()` method. Simply checking the result of `Categories()` will not work, because it will at worst return an empty `DataList` object. It will never return false. We use `exists()` to check falsiness.
+We check the existence of categories with the `exists()` method. Simply checking the result of `Categories()` will not work, because it will at worst return an empty `DataList` object. It will never return false. We use `exists()` to check trueness.
 
 Invoking `column()` on the list of `ArticleCategory` objects will get an array of all the values for the given column, which saves us the trouble of looping through the list just to get one field.
 
