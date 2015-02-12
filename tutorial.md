@@ -1,4 +1,4 @@
-## Working with data relationships
+## Data Relationships: Using $many_many
 
 In this tutorial, we'll add categories to our articles using another type of plural data relationship known as `$many_many`. 
 
