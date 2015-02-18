@@ -5,6 +5,7 @@ In this tutorial we're going to look at adding forms to the frontend of our webs
 ### What we'll cover
 * How SilverStripe handles forms
 * Adding a form to a template
+* Creating the Comment data model
 * Handling a form submission
 * Dealing with validation
 
@@ -189,11 +190,9 @@ This is mostly just a demonstration of form methods.. You probably wouldn't want
 
 If you're a bit dismayed about having to manually add all of the basic requirements for Bootstrap, rest assured there is a `bootstrap-forms` module that automatically does most of these updates. We haven't talked about modules yet, so it's a bit out of scope for now, but be aware that this is a bit more complex than it needs to be.
 
-### Handling a form submission
+### Creating a Comment data model
 
 When a user submits a comment, we want to save it to the database and add it to the page. Before we go any further with forms, we're going to need to do some data modeling to store all that content.
-
-#### Building a Comment data model
 
 Let's create a simple `ArticleComment` DataObject. We've seen all this before.
 *mysite/code/ArticleComment.php*
@@ -249,7 +248,7 @@ While we're in here, let's carve up the template and add a loop for all the comm
 
 Refresh, and the expected result is that no comments appear above the form.
 
-#### Writing a handler method
+### Handling form submission
 
 Now that we have our data models set up, we can start using them in our form handler. Looking at our form method, the name of the handler we've specified is `handleComment()`. Let's create that method, right below the form creation method.
 
@@ -286,11 +285,13 @@ Yikes!
 
 What's happening here? We'll get to the error in just a moment, but right now, it's important to understand where we are and what we're looking at.
 
-Take a look at the URL. `travel-guides/sample-article-1/CommentForm`. The first two segments of that are easily identifiable. It's the URL of our current article page. The last part, `CommentForm` is what's called a *controller action*. By default, the URL part that immediately follows the page URL will tell the controller to invoke a method by that name. In this case, we want the `CommentForm()` method on our controller to execute, because it creates the `Form` object, which is then passed along to our form submission handler. This right here is where most of the magic of forms happens in SilverStripe. They actually submit to a URL that recreates them as they were rendered.
+Take a look at the URL. `travel-guides/sample-article-1/CommentForm`. The first two segments of that are easily identifiable. It's the URL of our current article page. The last part, `CommentForm` is what's called a *controller action*. By default, the URL part that immediately follows the page URL will tell the controller to invoke a method by that name. In this case, we want the `CommentForm()` method on our controller to execute, because it creates the `Form` object, which is then passed along to our form submission handler. This, right here, is where most of the magic of forms happens in SilverStripe. They actually submit to a URL that recreates them as they were rendered to the user.
 
-You may have noticed that I casually mentioned an an alarming detail of request handling in SilverStripe -- **you can invoke arbitrary methods in the URL**. Exhale. It's not that simple.
+You may have noticed that I casually mentioned an an alarming detail of request handling in SilverStripe -- **you can invoke arbitrary methods in the URL**. 
 
-In fact, that's precisely why we're seeing this error. We can't just execute arbitrary controller methods from the URL. They have to be whitelisted using a static variable known as `$allowed_actions`. Let's do that now.
+Exhale. It's not that simple.
+
+In fact, that's precisely why we're seeing this error. We can't just execute arbitrary controller methods from the URL. The method has to be whitelisted using a static variable known as `$allowed_actions`. Let's do that now.
 
 *mysite/code/ArticlePage.php*
 ```php
@@ -342,7 +343,7 @@ Try submitting the form again with an existing comment, and you'll see that we g
 
 #### Preserving state
 
-There's one usability problem here, and perhaps we shouldn't worry about it too much since we're not particularly motivated to be nice to spammers, but it would be nice if the form saved its invalid state, so that the user doesn't have to repopulate an empty form. For this, the convention is to use `Session` state.
+There's one usability problem here, and perhaps we shouldn't worry about it too much since we're not particularly motivated to be nice to spammers, but for the sake of teaching the concept, it would be nice if the form saved its invalid state, so that the user doesn't have to repopulate an empty form. For this, the convention is to use `Session` state.
 
 *mysite/code/ArticlePage.php* (ArticlePage_Controller)
 ```php
