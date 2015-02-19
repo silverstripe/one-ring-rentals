@@ -62,7 +62,7 @@ public function sendContactForm($data, $form) {
 		return $this->redirectBack();
 	}
 	
-	rerurn $this->redirect('/some/success/url');
+	return $this->redirect('/some/success/url');
 }
 ```
 
