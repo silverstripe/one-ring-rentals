@@ -309,6 +309,29 @@ We made a change to a static variable, so we have to run `?flush`. Go back to th
 
 Try submitting the form again. You should now see your comment posted.
 
+#### Binding to a DataObject
+
+Let's take this a step further. We've talked about how forms are first-class citizens in SilverStripe. Part of that is being model-aware. Looking at our handler method, we see that all the form parameters are named exactly the same as the `ArticleComment` database fields. This is ideal, because it means we can take advantage of a massive time-saving method of the form class known as `saveInto()`.
+
+Let's modify our function to call `saveInto()` instead of manually assigning all the form values.
+
+*myite/code/ArticlePage.php* (ArticlePage_Controller)
+```php
+public function handleComment($data, $form) {
+	$comment = ArticleComment::create();
+	$comment->ArticlePageID = $this->ID;
+	$form->saveInto($comment);
+	$comment->write();
+
+	$form->sessionMessage('Thanks for your comment','good');
+
+	return $this->redirectBack();
+}
+```
+Notice that we still have to manually assign the `ArticlePageID` field, as that is not present in the form data. We could have passed it via a hidden input, which would eliminate that line of code.
+
+What's great about this method is that it can actually respond to the needs of a specific model. If our `ArticleComment` object had a method called `saveComment()` or `saveName()`, it could save the form data in its own specific way. So it may look like a shotgun approach, but it can actually be pretty granular if you want it to be.
+
 ### Dealing with validation
 
 Our form is accepting submissions and working as expected, so let's now add a bit of validation. We're already using `RequiredFields`, which is our primary sentinel against bad data, but what if we want to add some custom logic that goes beyond simple sanity checks?
