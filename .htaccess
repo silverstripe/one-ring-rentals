@@ -1,3 +1,4 @@
+php_value display_errors On
 ### SILVERSTRIPE START ###
 <Files *.ss>
 	Order deny,allow

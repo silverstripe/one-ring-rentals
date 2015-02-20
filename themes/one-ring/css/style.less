@@ -224,7 +224,14 @@ iframe[src="about:blank"]{
 	text-align:left;
 }
 
-.form-control{
+form div.form-control {
+	border:0;
+	padding:0;
+	height:auto;
+}
+input.form-control,
+select.form-control,
+textarea.form-control{
 	.border-radius(4px);
 	.box-shadow(none);
 	border-color:#E4E4E4;
@@ -233,7 +240,9 @@ iframe[src="about:blank"]{
 	margin-bottom:15px;
 }
 
-.form-control:focus {
+input.form-control:focus,
+select.form-control:focus,
+textarea.form-control:focus {
     .box-shadow(none);
     outline: 0 none;
 	border-color:@light-gray;
@@ -6523,6 +6532,7 @@ a.tp-caption.btn-lg{
 		margin-top:20px;
 		display:inline-block;
 		background-color: transparent;
+		width:100%;
 	}
 }
 
