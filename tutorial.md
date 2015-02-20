@@ -333,7 +333,7 @@ public function handleComment($data, $form) {
 }
 ```
 
-Before creating the `Comment` object, we first inspect the `$data` array to see if everything looks right. We look for a comment on this page specifically that contains the same content, and if so, we add a message to the top of the form. The value `'bad'` as the second argument gives it an appropriate CSS class. `'good'` is the other option here.
+Before creating the `ArticleComment` object, we first inspect the `$data` array to see if everything looks right. We look for a comment on this page specifically that contains the same content, and if so, we add a message to the top of the form. The value `'bad'` as the second argument gives it an appropriate CSS class. `'good'` is the other option here.
 
 To filter out false positives, we make sure the comment is at least 20 characters long. It's plausible that multiple readers might comment "Nice article" or "Good work" and we don't want to punish them.
 
