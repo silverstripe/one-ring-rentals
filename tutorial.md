@@ -185,7 +185,7 @@ class SiteConfigExtension extends DataExtension {
 We define a method for one of the most used extension points in the framework, `updateCMSFields`, which is offered by all DataObject classes to update their CMS interface before rendering. Notice that we don't have to return anything. The SiteConfig class will do that for us. Right now, we're just updating the object it passed us through `$this->extend('updateCMSFields', $fields)`. Since objects are passed by reference in PHP, we can feel free to mutate that `$fields` object as needed.
 
 #### Registering your extension in the config
-The last thing we need to do is apply the extension to the `SiteConfig` class. This is done through the Config layer.
+To activate our extension, we need to apply it to the `SiteConfig` class. This is done through the Config layer.
 
 *mysite/_config/config.yml*
 ```
@@ -220,5 +220,5 @@ Lastly, we'll update our template to use the new fields. All `Page` templates ar
 </ul>
 ```
 
-We've skipped over Pinterest, as it probably wouldn't apply to this business. We'll cover RSS in another tutorial, but it won't be a global RSS feed, so we can remove that button, as well.
+We've skipped over Pinterest, as it probably wouldn't apply to this business. We'll cover RSS in another tutorial, but either way, it won't be a site-wide RSS feed, so we can remove that button, as well.
 
