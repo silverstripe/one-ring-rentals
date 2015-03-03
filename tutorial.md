@@ -43,7 +43,7 @@ A helpful metaphor to help distinguish between extensions and that subclasses ar
 ### Extensions vs. other approaches
 If you've ever used Ruby on Rails, or perhaps more popularly, LESS, you've probably already identified this familiar concept as a "mixin," and that is an accurate assessment. SilverStripe extensions are very similar to mixins. They're single-purpose bundles of functionality that augment existing code. 
 
-Further, if you're fairly well-versed in PHP, you might be wondering why SilverStripe has reinvented the concept of *traits*, offered natively in PHP since its version 5.4 release. You're certainly not far off, but there are two good reasons why SilverStripe uses its own extensions pattern rather than PHP traits.
+Further, if you're fairly well-versed in PHP, you might be wondering why SilverStripe has reinvented the concept of *traits*, offered natively in PHP since its version 5.4 release. You're certainly not far off, but there are a few good reasons why SilverStripe uses its own extensions pattern rather than PHP traits.
 
 The first reason is simple history. The open-source release of SilverStripe predates PHP 5.4 by about seven years, so to some extent, extensions were built into the SilverStripe codebase as a long-standing workaround for a shortcoming in PHP.
 
@@ -71,7 +71,7 @@ class MyMemberExtension extends DataExtension {
        //... handle normal login here
     }
 }
-
+```
 This won't work. When an extension method collides with the class its extending, the native method always wins. You can only inject *new* functionality into a class. You can't overload it like you do with a subclass.
 
 Fortunately, to address this, SilverStripe offers **extension points**. Extension points are created when the class being extended invokes the `$this->extend()` method and hands off the execution to any and all extensions of the class, providing any references that the extension may want to use.
