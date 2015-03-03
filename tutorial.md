@@ -31,7 +31,7 @@ The simplest case for an extension is whenever you're writing identical or nearl
     public function geocodeAddress() {
         //....
     }
-
+```
 You could put all of this in a parent class and your `Event` and `Store` data objects inherit from it, but that's not very practical or logical. Other than the business rule that says they both need to go on a map, there's no really good reason to put both of these classes in the same ancestry. Further, if the two classes don't share the same parent, the whole model falls apart.
 
 So what do you do? Put all the shared code in an extension and apply that extension to every class that needs it. That way, you don't have to repeat yourself, and it becomes inexpensive to add mappability to any DataObject.
