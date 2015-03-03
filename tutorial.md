@@ -1,4 +1,4 @@
-## Using Data Extensions
+## Using Extensions
 
 In this tutorial, we'll discuss one of the major building blocks of modular and reusable code in SilverStripe Framework: extensions. We won't be writing a whole lot of code in this lesson. Rather, we'll illustrate a really key concept that is important to understand going forward.
 
@@ -9,7 +9,7 @@ In this tutorial, we'll discuss one of the major building blocks of modular and 
 * Building and applying an extension
 
 ### What are extensions?
-By definition, an extension is any subclass of the `DataExtension` core class in SilverStripe. In practice, however, it's a modular bit of code that can be injected into one or many other classes. The word "extend" might make you think of subclassing, but extensions are actually quite different from subclasses. Subclasses inherit all methods and properties from their one-and-only parent class. Extensions, on the other hand, supply a set of properties and methods that can be "magically" added to other classes. I use the word "magically" because extensions don't inject any hard code into your class definition. The methods and properties are added at runtime.
+By definition, an extension is any subclass of the `Extension` core class in SilverStripe. In practice, however, it's a modular bit of code that can be injected into one or many other classes. The word "extend" might make you think of subclassing, but extensions are actually quite different from subclasses. Subclasses inherit all methods and properties from their one-and-only parent class. Extensions, on the other hand, supply a set of methods that can be "magically" added to other classes. I use the word "magically" because extensions don't inject any hard code into your class definition. The methods are added at runtime. You can also go a step further an add properties to models which are derived from `DataObject` by using the `DataExtension` class. For the rest of this lesson we'll focus on the `DataExtension` class. 
 
 The simplest case for an extension is whenever you're writing identical or nearly identical functionality in multiple classes. Imagine that you have a website for a business that displays all of its stores on a Google map. It also has events, which happen at specific places, and can be put on a map. Both of these classes need to have code similar to this:
 
@@ -194,7 +194,7 @@ SiteConfig:
     - SiteConfigExtension
 ```
 
-Because we changed the config, we have to flush the cache. Build the database using `dev/build?flush`. You should see some new fields.
+Because we changed the config, we have to flush the cache. Build the database using `dev/build?flush=1`. You should see some new fields.
 
 Now access the Settings tab in the CMS and populate the fields with some values.
 
