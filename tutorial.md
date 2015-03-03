@@ -38,7 +38,43 @@ So what do you do? Put all the shared code in an extension and apply that extens
 
 Some other examples might include adding functionality to send an email to an administrator after a given record is updated, or adding features that integrate a record with social media APIs. There are many good reasons to use extensions, and any decent sized SilverStripe project is bound to have a few in play.
 
-A helpful metaphor to help distinguish between extensions and that subclasses are about *vertical* architecture, and extensions are about *horizontal* architecture.
+A helpful metaphor to help distinguish between extensions and that subclasses are about *vertical* architecture, and extensions are about *horizontal* architecture. If you've done a lot of CSS, you're probably familiar with this design pattern. Think about the difference between the following:
+
+```html
+<ul class="notifications">
+    <li class="notification">Some text here</li>
+</ul>
+
+<div class="actions">
+    <a class="action">Do this</a>
+</div>
+```
+```css
+ul.notifications li.notification, .actions a.action {
+    background: red;
+    color:white;
+}
+```
+
+Versus using a more horizontal pattern:
+```html
+<ul class="notifications">
+    <li class="notification alert">Some text here</li>
+</ul>
+
+<div class="actions">
+    <a class="action alert">Do this</a>
+</div>
+```
+
+```css
+.alert {
+    background: red;
+    color: white;
+}
+```
+
+By injecting style through a separate class, we can effectively "tag" our element as having a specific set of traits, rather than relying on the inheritance chain to target the element in a specific case. You can think of data extensions in SilverStripe as giving you the option of mixing multiple PHP classes together.
 
 ### Extensions vs. other approaches
 If you've ever used Ruby on Rails, or perhaps more popularly, LESS, you've probably already identified this familiar concept as a "mixin," and that is an accurate assessment. SilverStripe extensions are very similar to mixins. They're single-purpose bundles of functionality that augment existing code. 
