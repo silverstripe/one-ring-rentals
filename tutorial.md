@@ -181,7 +181,7 @@ class SiteConfigExtension extends DataExtension {
         ));
     }
 }
-
+```
 We define a method for one of the most used extension points in the framework, `updateCMSFields`, which is offered by all DataObject classes to update their CMS interface before rendering. Notice that we don't have to return anything. The SiteConfig class will do that for us. Right now, we're just updating the object it passed us through `$this->extend('updateCMSFields', $fields)`. Since objects are passed by reference in PHP, we can feel free to mutate that `$fields` object as needed.
 
 #### Registering your extension in the config
