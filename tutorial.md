@@ -1,383 +1,296 @@
-## Introduction to Frontend Forms
+# Introduction to ModelAdmin
 
-In this tutorial we're going to look at adding forms to the frontend of our website. We'll add a new feature that allows users to post comments on our articles.
+In this lesson, we'll create the Property object that will drive most of the content in our application, and add a management interface for it in the CMS using ModelAdmin.
 
-### What we'll cover
-* How SilverStripe handles forms
-* Adding a form to a template
-* Creating the Comment data model
-* Handling a form submission
-* Dealing with validation
+## What we'll cover:
 
-### How SilverStripe handles forms
+* What is ModelAdmin, and when do I use it?
+* An overview of the CMS taxonomies
+* Building a standalone DataObject
+* Creating a ModelAdmin interface
+* Basic customisations for ModelAdmin
+* Adding our data to the template
 
-This lesson is about frontend forms, which is a very important distinction to make, because we've actually been working with forms since very early on in the CMS. Whenever we're editing data in the backend, we're using a form. The main difference is that in the CMS, only a small part of that form is exposed to the model class via `getCMSFields()`.
+## What is ModelAdmin, and when do I use it?
 
-When you think about how a framework might deal with form creation, you may imagine a simple object that takes an array of form fields and ultimately dumps some HTML via a `render()` method or something similar, but one of the most dinstinguishing features of forms in SilverStripe is that they are treated a *first-class citizens*, which is to say they're intelligent objects that work with all the big players in the request cycle.
+In the last several lessons, we've talked a lot about DataObject content versus Page content. To recap, when content represents an entire page, which is to say, the `$Layout` section of our template, we subclass `Page` and manage this content in the site tree. When content is just part of a page, but merits its own editing interface, we use DataObjects. We looked at DataObject based content in our `RegionsPage`. While each `Region` object is part of a page, it needs its own editing tool. It wouldn't make sense to manage all that structured and repeating content on one page.
 
-#### Creating a simple form
+That all works great when DataObject content is hosted on a page, but what about generic content that is used all over the site, and doesn't belong to any specific parent? You might have a store that manages products, or a microlending site with many projects. This type of content really merits a dedicated management console in the CMS. Binding it to a page would be both confusing for the content author, and add unnecessary complexity to your data model. Another example is content that you want to manage in the CMS that is never displayed to the public. Think of a business that manages a vast list of customers and orders. This type of content is only visible to admins, and binding it to a page doesn't make any sense.
 
-Let's look at a simple form constructor to better understand how this will work. The following method would be placed in any `Controller`.
+What we're talking about here is the idea of *standalone* DataObjects. They're free-floating in our system -- managed, but not bound to any specific hierarchy. For this type of content, we use `ModelAdmin`.
+
+When we create a ModelAdmin interface, we get a new top-level section of the CMS, living among Pages, Files, Security, etc., that is dedicated to managing content per our specification. The great thing about ModelAdmin is that you can get up and running really fast, and customisations come fairly cheap.
+
+## An overview of CMS taxonomies
+
+Before we start writing code, let's take a step back a bit and look at the bigger picture of how the CMS is architected and how it relates to ModelAdmin.
+
+### LeftAndMain
+
+Every top-level "page" you use in the CMS -- that is, *Pages*, *Files*, *Security*, *Reports*, and *Settings* -- is a subclass of `LeftAndMain`. LeftAndMain is kind of the matriarch of the entire CMS. It oversees and handles everything from permissions, to generating edit forms, to CSS and JavaScript bootstrapping, to request negotiation, to saving and deleting records. All of that said, the primary job of this behemoth is to provide a secure user interface that contains a `Left` section, like the site tree, or a search form, and a `Main` section, which is often an edit form. I know you're probably wondering, based on that, how did they come up with the name *LeftAndMain*? If you think of it, please let me know as soon as you figure it out. It's had me puzzled for years.
+
+On a side note, I've always been quite intrigued by the name, because having a controller that describes the layout is so antithetical to MVC. In newer versions of SilverStripe, this ideological struggle must have had an effect, because, in the codebase, the *Left* part of *LeftAndMain* is now called *Tools*, which is much more appropriate. Perhaps someday, *LeftAndMain* will be dethroned by its successor *ToolsAndMain*, but for now, we'll enjoy the not-so-aptly named juggernaut of the CMS and take advantage of everything it offers to us.
+
+Any subclass of `LeftAndMain` will automatically get added to the main menu in the CMS. All you have to do is provide templates that define its *Main* section, and another that defines its *Tools* section. ModelAdmin is an example of a class that does that, and it makes a lot of assumptions about what we want in both sections, so it's supremely easy to get started.
+
+## Building a standalone DataObject
+
+As I said before, in this tutorial we're going to tackle the main content type in our application -- the *property* object, which represents any given holiday rental that an end user can rent, or that any property owner can let out. The property object will undoubtedly continue to grow with our application, but for now, we're just focused on giving them a home in the CMS, so let's keep it simple for now. Let's just give this object all the fields it needs for its representation on the home page.
+
+Looking at the home page, we can see that we need the following fields:
+* Price per night
+* Photo
+* Title
+* Region
+* Number of bedrooms
+* Number of bathrooms
+
+Further, we know that these properties displaying on the home page must have some special attribute assigned to them, so let's add a `FeaturedOnHomepage` field as well.
+
+*mysite/code/Property.php*
 ```php
-public function ContactForm() {
-	$myForm = Form::create(
-		$controller,
-		'ContactForm',
-		FieldList::create(
-			TextField::create('YourName','Your name'),
-			TextareaField::create('YourComments','Your comments')
-		),
-		FieldList::create(
-			FormAction::create('sendContactForm','Submit')
-		),
-		RequiredFields::create('YourName','YourComments')
-	);
+class Property extends DataObject {
 	
-	return $myForm;
-}
-```
-
-Let's walk through each argument of the constructor:
-
-* `$controller` A form should be generated by, and handled by, a Controller. The benefits to this are impressive, and we'll see some of them in a bit. Because the controller that creates the form usually handles its submission as well, 99% of the time, this first argument is going to be `$this`.
-* `ContactForm` A string representing the *name of the method* that creates the form. Odd, right? It's a bit unconventional to be dealing with class methods as strings, for sure, but this is a really key feature. The form will submit to a URL that calls this method, which means that we get the fully configured `Form` object to inspect and manipulate when handling submission. We can add error messages, set state, and even manipulate the fields based on the user's submission. Because this argument always describes the name of the function we're in, you can simply use the PHP constant `__FUNCTION__` here.
-* A `FieldList` object containing all of the form fields that accept user input
-* A `FieldList` object that contains all the form *actions*, or buttons, that submit a form. Often times you'll only have one action. The first argument of the `FormAction` constructor is the method on the controller that will be invoked when the form is submitted.
-* A `RequiredFields` object takes a list of form field names to validate. Validation, as you may know, is infinitely complex. In this case, we're doing very basic validation that simply ensures that the fields contain valid data. Each form field validates itself, so an `EmailField` will validate differently than a simple `TextField`.
-
-#### Handling submission
-
-In the `FieldList` of actions for our form, we specified a single form action that maps to the method `sendContactForm`. Let's look at what that method might do. Again, the following code could be in any `Controller` class.
-
-```php
-public function ContactForm() {
-	//...
-}
-
-public function sendContactForm($data, $form) {
-	$name = $data['YourName'];
-	$message = $data['YourMessage'];
-	if(strlen($message) < 10) {
-		$form->addErrorMessage('YourMessage','Your message is too short','bad');
-		return $this->redirectBack();
-	}
-	
-	return $this->redirect('/some/success/url');
-}
-```
-
-Our form handler method is given two parameters:
-
-* `$data` contains an array of all the form field names mapped to their values, very similar to what you would get from `$_POST`.
-* `$form` is the form object that the `ContactForm` method gave us. Remember that we had to specify the name of the function in our form constructor? This is why. Now our form handler has full access to that form, which is immeasurably useful.
-
-So that's the really high-level view of how forms work. Now we'll look at implementing a working frontend form in our project.
-
-### Adding a form to a template
-
-Let's look at our `ArticlePage.ss` template again and find the comment form near the bottom of the page. Let's try our best to replicate that form in our controller.
-
-*mysite/code/ArticlePage.php*
-```php
-class ArticlePage_Controller extends Page_Controller {
-
-	public function CommentForm() {
-		$form = Form::create(
-			$this,
-			__FUNCTION__,
-			FieldList::create(
-				TextField::create('Name',''),
-				EmailField::create('Email',''),
-				TextareaField::create('Comment','')
-			),
-			FieldList::create(
-				FormAction::create('handleComment','Post Comment')
-			),
-			RequiredFields::create('Name','Email','Comment')
-		);
-
-		return $form;
-	}
-}
-```
-
-This is all very similar to what we did in the example. Notice we're leaving the labels for the fields deliberately blank. That's because in the design, they're added with `placeholder` attributes. Let's make a small update to populate the placeholders of the form fields.
-
-*mysite/code/ArticlePage.php*
-```php
-public function CommentForm() {
-	//...
-		FieldList::create(
-			TextField::create('Name','')
-				->setAttribute('placeholder','Name*'),
-			EmailField::create('Email','')
-				->setAttribute('placeholder','Email*'),
-			TextareaField::create('Comment','')
-				->setAttribute('placeholder','Comment*')
-		),
-	//...
-}
-```
-
-Since this is a public method on the controller, we can add it to the template by calling `$CommentForm`. Add that variable in place of the static form markup. Refresh the page and have a look.
-
-Looks pretty awful, right? There are still a number of modifications we have to make to our form to keep it in line with the markup the designer provided. Let's make a few more updates.
-
-```php
-public function CommentForm() {
-	$form = Form::create(
-		$this,
-		__FUNCTION__,
-		FieldList::create(
-			TextField::create('Name','')
-				->setAttribute('placeholder','Name*')
-				->addExtraClass('form-control'),
-			EmailField::create('Email','')
-				->setAttribute('placeholder','Email*')
-				->addExtraClass('form-control'),
-			TextareaField::create('Comment','')
-				->setAttribute('placeholder','Comment*')
-				->addExtraClass('form-control')
-		),
-		FieldList::create(
-			FormAction::create('handleComment','Post Comment')
-				->setUseButtonTag(true)
-				->addExtraClass('btn btn-default-color btn-lg')
-		),
-		RequiredFields::create('Name','Email','Comment')
-	);
-
-	$form->addExtraClass('form-style');
-
-	return $form;
-}
-```
-
-We use the chainable methods `setAttribute` and `addExtraClass` for the main fields and for the form itself, and `setUseButtonTag` for the form action to force it to render a `<button>` instead of an `<input>`. Refresh, and things should look a lot better now.
-
-This is getting a bit verbose. Let's see if we can tighten all that up to add the extra classes and placeholders dynamically.
-
-```php
-public function CommentForm() {
-	$form = Form::create(
-		$this,
-		__FUNCTION__,
-		FieldList::create(
-			TextField::create('Name',''),
-			EmailField::create('Email',''),
-			TextareaField::create('Comment','')
-		),
-		FieldList::create(
-			FormAction::create('handleComment','Post Comment')
-				->setUseButtonTag(true)
-				->addExtraClass('btn btn-default-color btn-lg')
-		),
-		RequiredFields::create('Name','Email','Comment')
-	)
-	->addExtraClass('form-style');
-	
-	foreach($form->Fields() as $field) {
-		$field->addExtraClass('form-control')
-		       ->setAttribute('placeholder', $field->getName().'*');			
-	}
-
-	return $form;
-}
-```
-Form methods are chainable, just like form field methods, so we've chained `addExtraClass` to the constructor. We use the `Fields()` method of the form to get each field by reference and add the extra class to each one, and create a dynamic placeholder based on the field's name. 
-
-This is mostly just a demonstration of form methods.. You probably wouldn't want to do something this aggressive in your project code because it doesn't scale well. Imagine if we had a new field that wasn't required, for instance, and the placeholder shouldn't have an asterisk next to it. Sometimes, it's okay to be verbose and repeat yourself a little bit. You'll be glad you did when you have to make small updates and handle edge cases.
-
-If you're a bit dismayed about having to manually add all of the basic requirements for Bootstrap, rest assured there is a `bootstrap-forms` module that automatically does most of these updates. We haven't talked about modules yet, so it's a bit out of scope for now, but be aware that this is a bit more complex than it needs to be.
-
-### Creating a Comment data model
-
-When a user submits a comment, we want to save it to the database and add it to the page. Before we go any further with forms, we're going to need to do some data modeling to store all that content.
-
-Let's create a simple `ArticleComment` DataObject. We've seen all this before.
-*mysite/code/ArticleComment.php*
-```php
-class ArticleComment extends DataObject {
-
 	private static $db = array (
-		'Name' => 'Varchar',
-		'Email' => 'Varchar',
-		'Comment' => 'Text'
+		'Title' => 'Varchar',
+		'PricePerNight' => 'Currency',
+		'Bedrooms' => 'Int',
+		'Bathrooms' => 'Int',
+		'FeaturedOnHomepage' => 'Boolean'
 	);
 
 
 	private static $has_one = array (
-		'ArticlePage' => 'ArticlePage'
+		'Region' => 'Region',
+		'PrimaryPhoto' => 'Image'
 	);
-}
-```
 
-Notice we have a `$has_one` back to `ArticlePage` to set up a `$has_many` relationship. Let's now follow through with that.
 
-*mysite/code/ArticlePage.php*
-```php
-class ArticlePage extends Page {
+	public function getCMSfields() {
+		$fields = FieldList::create(TabSet::create('Root'));
+		$fields->addFieldsToTab('Root.Main', array(
+			TextField::create('Title'),
+			CurrencyField::create('PricePerNight','Price (per night)'),
+			DropdownField::create('Bedrooms')
+				->setSource(ArrayLib::valuekey(range(1,10))),
+			DropdownField::create('Bathrooms')
+				->setSource(ArrayLib::valuekey(range(1,10))),
+			DropdownField::create('RegionID','Region')
+				->setSource(Region::get()->map('ID','Title')),
+			CheckboxField::create('FeaturedOnHomepage','Feature on homepage')
+		));
+		$fields->addFieldToTab('Root.Photos', $upload = UploadField::create(
+			'PrimaryPhoto',
+			'Primary photo'
+		));
 
-	//...
-	private static $has_many = array (
-		'Comments' => 'ArticleComment'
-	);
-	//...
-}
-```
+		$upload->getValidator()->setAllowedExtensions(array(
+			'png','jpeg','jpg','gif'
+		));
+		$upload->setFolderName('property-photos');
 
-Run `dev/build` and see that you get a new table.
-
-While we're in here, let's carve up the template and add a loop for all the comments. There are no comments right now, but there will be shortly.
-
-*themes/one-ring/templates/Layout/ArticlePage.ss* (line 72)
-```html
-<div class="comments">
-	<ul>
-		<% loop $Comments %>						
-		<li>
-			<img src="$ThemeDir/images/comment-man.jpg" alt="" />
-			<div class="comment">								
-				<h3>$Name<small>$Created.Format('j F, Y')</small></h3>
-				<p>$Comment</p>
-			</div>
-		</li>
-		<% end_loop %>
-	</ul>
-```
-
-Refresh, and the expected result is that no comments appear above the form.
-
-### Handling form submission
-
-Now that we have our data models set up, we can start using them in our form handler. Looking at our form method, the name of the handler we've specified is `handleComment()`. Let's create that method, right below the form creation method.
-
-*mysite/code/AriticlePage.php* (ArticlePage_Controller)
-```php
-public function CommentForm() {
-	//...
-}
-
-public function handleComment($data, $form) {
-	$comment = ArticleComment::create();
-	$comment->Name = $data['Name'];
-	$comment->Email = $data['Email'];
-	$comment->Comment = $data['Comment'];
-	$comment->ArticlePageID = $this->ID;
-	$comment->write();
-
-	$form->sessionMessage('Thanks for your comment!','good');
-
-	return $this->redirectBack();
-}
-```
-
-In the handler, we optimistically create the `ArticleComment` object as a first operation. We can do this because at this point the form has already passed validation, so we know that all of the required fields are in the `$data` array. You may not always want to do this. You might have some logic that determines otherwise based on the values provided, but let's just keep it simple for now.
-
-Notice that we create that `$has_many` relation by binding the comment back to the `ArticlePage`. That's an easy step to forget. Remember that `$has_one` fields are always suffixed with `ID`. `$this->ID` in this case refers to the current page ID. All the properties of a page (`Title`, `Content`, `ID`, etc.) are available in the controller as well as the model thanks to SilverStripe's `ModelAsController` class.
-
-Let's try submitting the form and see what happens.
-
-```
-Action 'CommentForm' isn't allowed on class ArticlePage_Controller.
-```
-Yikes!
-
-What's happening here? We'll get to the error in just a moment, but right now, it's important to understand where we are and what we're looking at.
-
-Take a look at the URL. `travel-guides/sample-article-1/CommentForm`. The first two segments of that are easily identifiable. It's the URL of our current article page. The last part, `CommentForm` is what's called a *controller action*. By default, the URL part that immediately follows the page URL will tell the controller to invoke a method by that name. In this case, we want the `CommentForm()` method on our controller to execute, because it creates the `Form` object, which is then passed along to our form submission handler. This, right here, is where most of the magic of forms happens in SilverStripe. They actually submit to a URL that recreates them as they were rendered to the user.
-
-You may have noticed that I casually mentioned an an alarming detail of request handling in SilverStripe -- **you can invoke arbitrary methods in the URL**. 
-
-Exhale. It's not that simple.
-
-In fact, that's precisely why we're seeing this error. We can't just execute arbitrary controller methods from the URL. The method has to be whitelisted using a static variable known as `$allowed_actions`. Let's do that now.
-
-*mysite/code/ArticlePage.php*
-```php
-class ArticlePage_Controller extends Page_Controller {
-
-	private static $allowed_actions = array (
-		'CommentForm',
-	);
-	
-	//...
-}
-```
-
-We made a change to a static variable, so we have to run `?flush`. Go back to the article page (i.e. remove **/CommentForm/** from the URL) and run the flush. We don't want to do this in the middle of a form submission.
-
-Try submitting the form again. You should now see your comment posted.
-
-### Dealing with validation
-
-Our form is accepting submissions and working as expected, so let's now add a bit of validation. We're already using `RequiredFields`, which is our primary sentinel against bad data, but what if we want to add some custom logic that goes beyond simple sanity checks?
-
-#### Adding custom validation logic to the handler
-
-If the logic were really complicated, we could write our own validator, which we'll cover in the future, but for simple validation, it's fine to do all of this in your form handler method. Let's run a check to make sure the user's comment has not already been added. You might think of this as really basic spam protection.
-
-*mysite/code/AritclePage.php* (ArticlePage_Controller)
-```php
-public function handleComment($data, $form) {
-	$existing = $this->Comments()->filter(array(
-		'Comment' => $data['Comment']
-	));
-	if($existing->exists() && strlen($data['Comment']) > 20) {
-		$form->sessionMessage('That comment already exists! Spammer!','bad');
-
-		return $this->redirectBack();
-	}		
-	
-	// ...
-}
-```
-
-Before creating the `ArticleComment` object, we first inspect the `$data` array to see if everything looks right. We look for a comment on this page specifically that contains the same content, and if so, we add a message to the top of the form. The value `'bad'` as the second argument gives it an appropriate CSS class. `'good'` is the other option here.
-
-To filter out false positives, we make sure the comment is at least 20 characters long. It's plausible that multiple readers might comment "Nice article" or "Good work" and we don't want to punish them.
-
-Again, the lesson here is not about spam protection, but just how to handle form validation. Don't accept this as gospel on how to secure your blog comments.
-
-Try submitting the form again with an existing comment, and you'll see that we generate an error message.
-
-#### Preserving state
-
-There's one usability problem here, and perhaps we shouldn't worry about it too much since we're not particularly motivated to be nice to spammers, but for the sake of teaching the concept, it would be nice if the form saved its invalid state, so that the user doesn't have to repopulate an empty form. For this, the convention is to use `Session` state.
-
-*mysite/code/ArticlePage.php* (ArticlePage_Controller)
-```php
-public function handleComment($data, $form) {
-	Session::set("FormData.{$form->getName()}.data", $data);
-	//...
-	$comment->write();
-
-	Session::clear("FormData.{$form->getName()}.data");
-	$form->sessionMessage('Thanks for your comment!','good');
-
-	return $this->redirectBack();
-}
-```
-
-We create a SKU using the form name to use as a sesssion token, and store the `$data` array there. If everything checks out, we clear it, so that the form renders clean on the next page load. If not, we're going to want the form to render the session data.
-
-*mysite/code/ArticlePage.php* (ArticlePage_Controller)
-```php
-public function CommentForm() {
-	//...
-
-	foreach($form->Fields() as $field) {
-		$field->addExtraClass('form-control')
-			  ->setAttribute('placeholder', $field->getName().'*');			
+		return $fields;
 	}
-
-	$data = Session::get("FormData.{$form->getName()}.data");
-	
-	return $data ? $form->loadDataFrom($data) : $form;
 }
-
 ```
 
-Using the ternary operator, we look to see if `$data` exists. If it does, return the form with the data loaded into it using `loadDataFrom`. If not, just return the form as is. Remember, most form methods all return the `Form` object, so it's okay to return the result of `loadDataFrom()` here.
+Most of this is straightforward, but let's look at a few peculiarities that might be jumping out at you.
 
-Test out your form and see that it now preserves its state after failed validation.
+* **`Currency` field type**: We have a `Currency` field type in our `$db` array, and a `CurrencyField` in our field list. They work nicely with each other to provide the correct formatting for currency, and ensure that the value is preceded by a currency symbol.
+* **`RegionID` as a name for the DropdownField**: Why do we have to explicitly append *ID* in this case? Other fields, like `UploadField` just accept the name of the `has_one` field, like *Photo*, without the requirement to name the exact database field. It's a bit confusing for sure, but keep in mind that a `DropdownField` doesn't always save to a `has_one`. It could just as well be saving to a text field. Other form fields that work only with data relationships know how to resolve the name of a relationship to a database column, but `DropdownField` is multi-purpose and fairly data model agnostic, so that's all that's going on here.
+* **`->setSource()` on the DropdownField**: Nothing too crazy here. This method tells the dropdown field what options are available in its list. You can provide the list as the third argument to `DropdownField`, but I find that it makes the code more readable to assign it in a chained method.
+* **`ArrayLib::valuekey()`**: Like `CheckboxSetField`, `DropdownField` takes an array where the keys are the data that will be saved when the option is selected, and the values of the array are labels that will be displayed for each option. Often times, they're the same. The `ArrayLib::valuekey()` function just mirrors the keys and values of an array.
+* **`range(1,10)`**: This is a simple PHP function that creates an array containing a range of elements. It doesn't have to be numeric. `range('A', 'C')` will give you an array containing `['A','B','C']`, for instance.
+* **`->setEmptyString()`**: This is the default, dataless option in our list. We don't want the dropdown to default to the first region listed, because that would be arbitrary. Rather, we want the user to explicitly declare the region the property is in. For bedrooms and bathrooms, it's fine if those default to `1`.
+
+Alright, now that we have all that sorted, let's run `dev/build`.
+
+## Creating a ModelAdmin interface
+
+We'll now create the `ModelAdmin` interface that will give us a place to hang all these `Property` records. A basic ModelAdmin interface is exceedingly simple to create.
+
+*mysite/code/PropertyAdmin.php*
+```php
+class PropertyAdmin extends ModelAdmin {
+
+	private static $menu_title = 'Properties';
+
+	private static $url_segment = 'properties';
+
+	private static $managed_models = array (
+		'Property'
+	);
+}
+```
+
+That's it! Let's walk through it:
+* `$menu_title`: The title that will appear in the left-hand menu of the CMS.
+* `$url_segment`: The URL part that will follow `admin/` to access this section. In this case, the path to our ModelAdmin interface will be `admin/properties`.
+* `$managed_models`: An array of class names that will be managed. Each ModelAdmin can manage multiple models. Each one is placed on its own tab across the top of the screen. In this case, we just have one, but we'll be adding more down the track.
+
+We created a new class, so we need to run a `?flush`. Let's do that and go into the CMS to see what we got. You should see a new *Properties* tab on the left. Give it a try, and see if you can add a few new `Property` records.
+
+## Making customisations
+
+Now that we've got our simple editing UI, we can start to customise it a bit to make it more powerful and user-friendly for our content editors.
+
+### Adding $summary_fields
+We'll start with what we've seen before. `$summary_fields` gives us control over what fields display in list view.
+
+*mysite/code/Property.php*
+```php
+class Property extends DataObject {
+	
+        //...
+	private static $summary_fields = array (
+		'Title' => 'Title',
+		'Region.Title' => 'Region',
+		'PricePerNight.Nice' => 'Price',
+		'FeaturedOnHomepage.Nice' => 'Featured?'
+	);
+	//...
+}
+```
+
+Notice that we can use dot-seprated syntax to invoke methods on each field. We know that `Region` is a `has_one`, so getting the `RegionID` is useless. We'll instead get the region's title, which is much more friendly. `Region.Title` translates to `$this->Region()->Title`.
+
+We also want to take advantage of the `Currency` field type that we used. Remember that it, too, returns an object. Most of the time, it just renders itself as a string, but we can invoke methods on it. In this, case the `Nice` method offered by the `Currency` class will give us a nicely formatted price with a currency symbol, commas, and decimal values.
+
+`Boolean` field types are quite generous, as well. We can invoke the `Nice()` method to return a value of *Yes* or *No*, translated per the user's locale.
+
+### Providing a custom icon
+
+Right now, the tab for our *Properties* section of the CMS is using a pretty generic icon, and if we have several of these custom admins, they won't be easily distinguished. Let's give it our own icon.
+
+Download assets for this lesson if you haven't yet, and place the `property.png` file in `mysite/icons`. Why not our theme? The CMS not theme-aware, so we should avoid mixing the two. If you ever change your theme, that should have no effect on the icons that appear in the CMS. Anything that relates to your code should be kept in your project directory.
+
+```php
+class PropertyAdmin extends ModelAdmin {
+
+	private static $menu_title = 'Properties';
+
+	private static $url_segment = 'properties';
+
+	private static $managed_models = array (
+		'Property'
+	);
+
+	private static $menu_icon = 'mysite/icons/property.png';	
+}
+```
+We changed a static property, so we'll run `?flush` and see that we have a new icon.
+
+### Customising the search form
+
+Just like the fields displayed in list view, the fields that appear in the search form are also customisable in the class definition of the DataObject. All we have to do is define a new private static variable called `$searchable_fields`. By default, the DataObject will provide the same fields that are specified in `$summary_fields`, but that may not be what you're looking for. In this case, we have `PricePerNight` in our `$summary_fields`, but that's not necessarily a field we want to search on in the admin, so let's explicitly declare a `$searchable_fields` array to list what we want.
+
+```php
+class Property extends DataObject {
+	
+        //...
+	private static $searchable_fields = array (
+		'Title',
+		'Region.Title',
+		'FeaturedOnHomepage'
+	);	
+        //...
+}
+```
+
+Run a `?flush` and see that we have a new search form that lets us search by the title of the property, and the title of its associated region.
+
+Searching by region title is nice, but it doesn't make a whole lot of sense for this to be a free text field, since our regions are a known list. It really should be a dropdown that allows us to choose from all the regions that have been added to the database. That way, the user doesn't have to worry about making a spelling error, and has a better idea of what's in the system.
+
+In order to do that, we'll have to write some executable code, which can't placed in a static variable assignment, so let's change `private static $searchable_fields` to `public function searchableFields()`, and we'll return an array.
+
+```php
+class Property extends DataObject {
+
+        //...
+	public function searchableFields() {
+		return array (
+			'Title' => array (
+				'filter' => 'PartialMatchFilter',
+				'title' => 'Title',
+				'field' => 'TextField'
+			),
+			'RegionID' => array (
+				'filter' => 'ExactMatchFilter',
+				'title' => 'Region',
+				'field' => DropdownField::create('RegionID')
+					->setSource(
+						Region::get()->map('ID','Title')
+					)
+					->setEmptyString('-- Any region --')				
+			),
+			'FeaturedOnHomepage' => array (
+				'filter' => 'ExactMatchFilter',
+				'title' => 'Only featured'				
+			)
+		);
+	}
+        //...     
+}
+```
+When we define `searchableFields()`, we need to be much more explicit about how we want our search form configured. Each field we include has to be mapped to an array containing three keys:
+* **`filter`**: The type of filter that should be used in the search. For a full list of available filters, see `framework/search/filters`, or view the [API documentation](http://api.silverstripe.org/3.1/class-SearchFilter.html). For title, we want a fuzzy match, so we use `PartialMatchFilter`, and since regions are filtered by ID, we want that to be an `ExactMatchFilter`.
+* **`title`**: The label that will identify the search field
+* **`field`**: You have three options here. 
+    * You can provide a string, representing the `FormField` class you want, as we  did with `Title`. 
+    * If you want something more complex, however, you can use a `FormField` object. In this case, I've instantiated a `DropdownField` much like the one we used in our `getCMSFields` function. 
+    * Another option is to just leave this undefined, and the DataObject will ask the fieldtype for its default search field, as we did with our `FeaturedOnHomepage` field. Every field type knows how to render its own search field. In this case, `Boolean` gives us a nice dropdown of three options: *Yes*, *No*, or *Any*, which is perfect. A `CheckboxField` would be either on or off. It wouldn't allow us to opt out of that filter.
+
+Give the search form a try now. It feels a little better, right?
+
+### Importing data
+
+At this point, it's probably a good idea to find the `import.sql` file that came with the lesson assets and run that on your database. It contains a lot of sample properties that will fill out your database and give you some data to work with. If you're using **MAMP**, you can access **phpMyAdmin** and run the import there. If you're not clear on how to do that, you can find many [tutorials](https://support.godaddy.com/help/article/6802/importing-sql-files-into-mysql-databases-using-phpmyadmin) to help you. If you're not using phpMyAdmin, you can follow the instructions in the *How to use this guide* article in this section.
+
+This step is optional, but it's a good idea. It will help keep us on the same page, and it will save you the time of creating dummy records.
+
+## Adding properties to the template
+
+The last step is simple. Let's just write a method in our `HomePage` controller that gets the featured properties.
+
+*mysite/code/HomePage.php*
+```php
+class HomePage_Controller extends Page_Controller {
+
+        //...
+	public function FeaturedProperties() {
+		return Property::get()
+				->filter(array(
+					'FeaturedOnHomepage' => true
+				))
+				->limit(6);
+	}	
+}
+```
+
+Now let's render the output to the template.
+
+*themes/one-ring/templates/Layout/HomePage.ss* (line 118)
+```html
+<% loop $FeaturedProperties %>
+<div class="item col-md-4">
+	<div class="image">
+		<a href="$Link">
+			<h3>$Title</h3>
+			<span class="location">$Region.Title</span>
+		</a>
+		$PrimaryPhoto.CroppedImage(220,194)
+	</div>
+	<div class="price">
+		<span>$PricePerNight.Nice</span><p>per night<p>
+	</div>
+	<ul class="amenities">
+		<li><i class="icon-bedrooms"></i> $Bedrooms</li>
+		<li><i class="icon-bathrooms"></i> $Bathrooms</li>
+	</ul>
+</div>
+<% end_loop %>
+```
+
+You may have noticed that we deliberately added a non-existent method, `$Link` to the property. That's okay. It will just get ignored for now, but in the future, we'll add that method, and we won't have to come back here to make the update.
+
+Reload the page and see your featured properties!
