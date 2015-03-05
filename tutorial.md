@@ -1,4 +1,4 @@
-## Using Extensions
+## Data Extensions and SiteConfig
 
 In this tutorial, we'll discuss one of the major building blocks of modular and reusable code in SilverStripe Framework: extensions. We won't be writing a whole lot of code in this lesson. Rather, we'll illustrate a really key concept that is important to understand going forward.
 
@@ -206,6 +206,7 @@ class SiteConfigExtension extends DataExtension {
         'TwitterLink' => 'Varchar',
         'GoogleLink' => 'Varchar',
         'YouTubeLink' => 'Varchar',
+        'FooterContent' => 'Text'
     );
 
     public function updateCMSFields(FieldList $fields) {
@@ -215,6 +216,7 @@ class SiteConfigExtension extends DataExtension {
             TextField::create('GoogleLink','Google'),
             TextField::create('YouTubeLink','YouTube')
         ));
+        $fields->addFieldsToTab('Root.Main', TextareaField::create('FooterContent', 'Content for footer'));
     }
 }
 ```
@@ -230,7 +232,7 @@ SiteConfig:
     - SiteConfigExtension
 ```
 
-Because we changed the config, we have to flush the cache. Build the database using `dev/build?flush=1`. You should see some new fields.
+Because we changed the config, we have to flush the cache. Build the database using `dev/build?flush`. You should see some new fields.
 
 Now access the Settings tab in the CMS and populate the fields with some values.
 
