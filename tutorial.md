@@ -233,9 +233,9 @@ class Property extends DataObject {
 }
 ```
 When we define `searchableFields()`, we need to be much more explicit about how we want our search form configured. Each field we include has to be mapped to an array containing three keys:
-* `filter`: The type of filter that should be used in the search. For a full list of available filters, see `framework/search/filters`, or view the [API documentation](http://api.silverstripe.org/3.1/class-SearchFilter.html). For title, we want a fuzzy match, so we use `PartialMatchFilter`, and since regions are filtered by ID, we want that to be an `ExactMatchFilter`.
-* `title`: The label that will identify the search field
-* `field`: You have three options here. 
+* **`filter`**: The type of filter that should be used in the search. For a full list of available filters, see `framework/search/filters`, or view the [API documentation](http://api.silverstripe.org/3.1/class-SearchFilter.html). For title, we want a fuzzy match, so we use `PartialMatchFilter`, and since regions are filtered by ID, we want that to be an `ExactMatchFilter`.
+* **`title`**: The label that will identify the search field
+* **`field`**: You have three options here. 
     * You can provide a string, representing the `FormField` class you want, as we  did with `Title`. 
     *If you want something more complex, however, you can use a `FormField` object. In this case, I've instantiated a `DropdownField` much like the one we used in our `getCMSFields` function. 
     * Another option is to just leave this undefined, and the DataObject will ask the fieldtype for its default search field, as we did with our `FeaturedOnHomepage` field. Every field type knows how to render its own search field. In this case, `Boolean` gives us a nice dropdown of three options: *Yes*, *No*, or *Any*, which is perfect. A `CheckboxField` would be either on or off. It wouldn't allow us to opt out of that filter.
