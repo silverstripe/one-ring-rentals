@@ -237,7 +237,7 @@ When we define `searchableFields()`, we need to be much more explicit about how 
 * **`title`**: The label that will identify the search field
 * **`field`**: You have three options here. 
     * You can provide a string, representing the `FormField` class you want, as we  did with `Title`. 
-    *If you want something more complex, however, you can use a `FormField` object. In this case, I've instantiated a `DropdownField` much like the one we used in our `getCMSFields` function. 
+    * If you want something more complex, however, you can use a `FormField` object. In this case, I've instantiated a `DropdownField` much like the one we used in our `getCMSFields` function. 
     * Another option is to just leave this undefined, and the DataObject will ask the fieldtype for its default search field, as we did with our `FeaturedOnHomepage` field. Every field type knows how to render its own search field. In this case, `Boolean` gives us a nice dropdown of three options: *Yes*, *No*, or *Any*, which is perfect. A `CheckboxField` would be either on or off. It wouldn't allow us to opt out of that filter.
 
 Give the search form a try now. It feels a little better, right?
