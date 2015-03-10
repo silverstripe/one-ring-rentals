@@ -29,7 +29,7 @@ Before we start writing code, let's take a step back a bit and look at the bigge
 
 Every top-level "page" you use in the CMS -- that is, *Pages*, *Files*, *Security*, *Reports*, and *Settings* -- is a subclass of `LeftAndMain`. LeftAndMain is kind of the matriarch of the entire CMS. It oversees and handles everything from permissions, to generating edit forms, to CSS and JavaScript bootstrapping, to request negotiation, to saving and deleting records. All of that said, the primary job of this behemoth is to provide a secure user interface that contains a `Left` section, like the site tree, or a search form, and a `Main` section, which is often an edit form. I know you're probably wondering, based on that, how did they come up with the name *LeftAndMain*? If you think of it, please let me know as soon as you figure it out. It's had me puzzled for years.
 
-On a side note, I've always been quite intrigued by the name, because having a controller that describes the layout is so antithetical to MVC. In newer versions of SilverStripe, this ideological struggle must have had an effect, because, in the codebase, the *Left* part of * LeftAndMain* is now called *Tools*, which is much more appropriate. Perhaps someday, *LeftAndMain* will be dethroned by its successor *ToolsAndMain*, but for now, we'll enjoy the not-so-aptly named juggernaut of the CMS and take advantage of everything it offers to us.
+On a side note, I've always been quite intrigued by the name, because having a controller that describes the layout is so antithetical to MVC. In newer versions of SilverStripe, this ideological struggle must have had an effect, because, in the codebase, the *Left* part of *LeftAndMain* is now called *Tools*, which is much more appropriate. Perhaps someday, *LeftAndMain* will be dethroned by its successor *ToolsAndMain*, but for now, we'll enjoy the not-so-aptly named juggernaut of the CMS and take advantage of everything it offers to us.
 
 Any subclass of `LeftAndMain` will automatically get added to the main menu in the CMS. All you have to do is provide templates that define its *Main* section, and another that defines its *Tools* section. ModelAdmin is an example of a class that does that, and it makes a lot of assumptions about what we want in both sections, so it's supremely easy to get started.
 
@@ -101,7 +101,7 @@ Most of this is straightforward, but let's look at a few peculiarities that migh
 * **`->setSource()` on the DropdownField**: Nothing too crazy here. This method tells the dropdown field what options are available in its list. You can provide the list as the third argument to `DropdownField`, but I find that it makes the code more readable to assign it in a chained method.
 * **`ArrayLib::valuekey()`**: Like `CheckboxSetField`, `DropdownField` takes an array where the keys are the data that will be saved when the option is selected, and the values of the array are labels that will be displayed for each option. Often times, they're the same. The `ArrayLib::valuekey()` function just mirrors the keys and values of an array.
 * **`range(1,10)`**: This is a simple PHP function that creates an array containing a range of elements. It doesn't have to be numeric. `range('A', 'C')` will give you an array containing `['A','B','C']`, for instance.
-* **`->setEmptyString()`**: We don't want the dropdown to default to the first region listed, because that would be arbitrary, and we want the user to explicitly declare the region the property is in. For bedrooms and bathrooms, it's fine if those default to `1`.
+* **`->setEmptyString()`**: This is the default, dataless option in our list. We don't want the dropdown to default to the first region listed, because that would be arbitrary. Rather, we want the user to explicitly declare the region the property is in. For bedrooms and bathrooms, it's fine if those default to `1`.
 
 Alright, now that we have all that sorted, let's run `dev/build`.
 
@@ -148,7 +148,7 @@ class Property extends DataObject {
 		'PricePerNight.Nice' => 'Price',
 		'FeaturedOnHomepage.Nice' => 'Featured?'
 	);
-        //...
+	//...
 }
 ```
 
@@ -177,7 +177,7 @@ class PropertyAdmin extends ModelAdmin {
 
 	private static $menu_icon = 'mysite/icons/property.png';	
 }
-
+```
 We changed a static property, so we'll run `?flush` and see that we have a new icon.
 
 ### Customising the search form
@@ -231,7 +231,7 @@ class Property extends DataObject {
 	}
         //...     
 }
-
+```
 When we define `searchableFields()`, we need to be much more explicit about how we want our search form configured. Each field we include has to be mapped to an array containing three keys:
 * `filter`: The type of filter that should be used in the search. For a full list of available filters, see `framework/search/filters`, or view the [API documentation](http://api.silverstripe.org/3.1/class-SearchFilter.html). For title, we want a fuzzy match, so we use `PartialMatchFilter`, and since regions are filtered by ID, we want that to be an `ExactMatchFilter`.
 * `title`: The label that will identify the search field
