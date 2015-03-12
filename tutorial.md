@@ -1,260 +1,293 @@
-## Using Extensions
+In this lesson, we'll introduce the concept of a controller action, which is a URL route that executes a function on a controller.
 
-In this tutorial, we'll discuss one of the major building blocks of modular and reusable code in SilverStripe Framework: extensions. We won't be writing a whole lot of code in this lesson. Rather, we'll illustrate a really key concept that is important to understand going forward.
+## What we'll cover
+* What are controller actions, and how are they used?
+* Create a controller action to render a DataObject
+* Rendering a DataObject as a page
+* Adding pseudo-page behaviour to a DataObject
 
-### What we'll cover
-* What are extensions, and why use them?
-* Extensions vs. other approaches
-* Extension gotchas
-* Building and applying an extension
+## How controller actions work
 
-### What are extensions?
-By definition, an extension is any subclass of the `Extension` core class in SilverStripe. In practice, however, it's a modular bit of code that can be injected into one or many other classes. The word "extend" might make you think of subclassing, but extensions are actually quite different from subclasses. Subclasses inherit all methods and properties from their one-and-only parent class. Extensions, on the other hand, supply a set of methods that can be "magically" added to other classes. I use the word "magically" because extensions don't inject any hard code into your class definition. The methods are added at runtime. You can also go a step further an add properties to models which are derived from `DataObject` by using the `DataExtension` class. For the rest of this lesson we'll focus on the `DataExtension` class. 
+Up to this point in our project, for the most part, every page has been on a single URL, which that URL points to a single controller, which renders a single `$Layout` template. However, if you think back to our lesson on forms, you may remember that we were able to extend the URL route for our controller in order to generate and render a form. We did this using a controller action. Forms are just one of many use cases for a controller action.
 
-The simplest case for an extension is whenever you're writing identical or nearly identical functionality in multiple classes. Imagine that you have a website for a business that displays all of its stores on a Google map. It also has events, which happen at specific places, and can be put on a map. Both of these classes need to have code similar to this:
+Using controller actions is simple. All we're talking about is appending a URL part to an existing URL that matches the name of a publicly accessible method on the controller. Let's give it a try.
+
+For this example, we're going to look at our Regions page. You'll see that it resolves to `http://[your base url]/regions`. Try appending a new segment to the URL, like `http://[your base url]/regions/test`. Not surprisingly, we get a 404.
+
+### Breaking down the request 
+
+The reason why we get a 404 might surprise you. Let's take a look behind the scenes and see how SilverStripe is resolving this. Using the same URL, append `?debug_request`.
+
+Let's take a look at what's going on here.
+
+`Testing '$Action//$ID/$OtherID' with 'test' on RegionsPage_Controller`
+
+Right out of the gate, we can see that SilverStripe resolved our URL to `RegionsPage_Controller`, which may come as a surprise, since the URL for this page does not include `/test/`, but what has happened is that the request handler has found a match for the URL and will assume that from this point forward, everything in the URL is a parameter being passed to the controller. By default, a controller gives you three extra parameters to pass beyond its base url, as we can see in our debug output.
+
+* **`$Action`**: Immediately follows the URL. In this case our action is `test`.
+* **`$ID`**: An ID that the controller action may want to use. This value does not have to be numeric. It's arbitrary, and just named `ID` because that's a common use case.
+* **`$OtherID`**: Same as `ID`. You get two. 
+
+You're not limited to this signature of parameters. In future lessons, we'll look at creating custom URL rules, but by default, this is what you get, and it's often all you need.
+
+Let's look at the next line of debug output.
+
+` Rule '$Action//$ID/$OtherID' matched to action 'handleAction' on RegionsPage_Controller. Latest request params: array ( 'Action' => 'test', 'ID' => NULL, 'OtherID' => NULL, )`
+
+So here we are. The request handler actually did match the `$Action/$ID/$OtherID` pattern, and it's trying to resolve our action, `test`. In the rest of the output, you can see that it fails to do that, and it renders an ErrorPage.
+
+Why did it fail? As we said before, the `$Action` parameter should represent a publicly accessible function on the controller. We have no method called `test` right now.
+
+Let's add that controller method now.
+
+*mysite/code/RegionsPage.php*
+```php
+class RegionsPage_Controller extends Page_Controller {
+
+	public function test() {
+		die('it works');
+	}
+	
+}
+```
+
+### Allowed actions
+
+Now try accessing the URL `/regions/test`. It still 404s. What's going on here?
+
+If you recall from our Lesson 11 tutorial on forms, we're not quite done yet. We have to whitelist the `test` method as one that can be invoked through the URL. You can imagine the security risk that would be imposed by allowing all public methods on a controller to be invoked arbitrarily in the URL. We don't want that. By default, no methods are allowed to be called through controller actions. You need to specify a list of those that are in a private static variable called `$allowed_actions`.
 
 ```php
+class RegionsPage_Controller extends Page_Controller {
 
-    private static $db = array (
-      'Address' => 'Varchar',
-      'City' => 'Varchar',
-      'Country' => 'Varchar(2)',
-      'Postcode' => 'Varchar(5)',
-      'Latitude' => 'Decimal(9,5)',
-      'Longitude' => 'Decimal(9,5)',
-    );
+	private static $allowed_actions = array (
+		'test'
+	);
+	
+	public function test() {
+		die('it works');
+	}
 
-    public function getFullAddress() {
+}
+```
+
+`$allowed_actions` can actually get quite complex. You can map these methods to required permission levels, and even custom functions that evaluate whether they should be accessible at runtime, which is really useful for complex controllers. In this case, we just want to make sure anyone can invoke the `test` action. 
+
+Refresh the page with a `?flush`, as we changed a private static variable. Now it works.
+
+## Creating a controller action to render a DataObject
+
+The most common use for a controller action is to assign a URL to a DataObject that is nested in a Page, and this is, in my opinion, one of the first milestones of becoming a skilled SilverStripe developer.
+
+We know that DataObjects are more primitive than Page objects. They contain none of the functionality for rendering a template, they have no `Link()` method, no meta tags, no controllers, etc. In short, they're not meant to be rendered as full pages. That doesn't mean, however, that you cannot assign them some of the properties necessary to do so. In fact, it often makes a lot of sense to.
+
+Let's keep the focus on our RegionsPage. We have a list of `Region` DataObjects that are related to the page via `has_many`. We want to create a detail view for each one of the regions in our list. The user should be able to click on one of the regions and see more information.
+
+This isn't an ideal use case for a DataObject as a page. These Region objects could just as well be pages in the site tree. It often comes down to a judgment call for the developer, guided by what will work best for the content editor. In a future tutorial, we'll look at creating a detail page for our `Property` DataObject, which, due to their volume, will be much more effective than managing them as pages.
+
+### Adding a Link() method
+
+We can start with the most fundamental requirement. Regions should be able to produce a distinct link to their detail page. Let's add a `Link()` method to each Region. We'll have it invoke a controller action that we have not yet defined.
+
+```php
+class Region extends DataObject {
         //...
-    }
-
-    public function geocodeAddress() {
-        //....
-    }
+	public function Link() {
+		return $this->RegionsPage()->Link('show/'.$this->ID);
+	}
+}
 ```
-You could put all of this in a parent class and your `Event` and `Store` data objects inherit from it, but that's not very practical or logical. Other than the business rule that says they both need to go on a map, there's no really good reason to put both of these classes in the same ancestry. Further, if the two classes don't share the same parent, the whole model falls apart.
 
-So what do you do? Put all the shared code in an extension and apply that extension to every class that needs it. That way, you don't have to repeat yourself, and it becomes inexpensive to add mappability to any DataObject.
+We get the `RegionsPage` that owns this Region via the `has_many` / `has_one` parity, and call its link method. We pass in some extra URL segments we want appended to its link. We specify an `$Action` of *show* and an `$ID` that represents the Region's ID.
 
-Some other examples might include adding functionality to send an email to an administrator after a given record is updated, or adding features that integrate a record with social media APIs. There are many good reasons to use extensions, and any decent sized SilverStripe project is bound to have a few in play.
+Now that we have that method, we'll apply it to the template. Change all the hash (#) links to `$Link`.
 
-A helpful metaphor to help distinguish between extensions and that subclasses are about *vertical* architecture, and extensions are about *horizontal* architecture. If you've done a lot of CSS, you're probably familiar with this design pattern. Think about the difference between the following:
-
+*themes/one-ring/templates/Layout/RegionsPage.ss*
 ```html
-<ul class="notifications">
-    <li class="notification">Some text here</li>
-</ul>
+<% loop $Regions %>
+<div class="item col-md-12"><!-- Set width to 4 columns for grid view mode only -->
+	<div class="image image-large">
+		<a href="$Link">
+			<span class="btn btn-default"><i class="fa fa-file-o"></i> Read More</span>
+		</a>
+		$Photo.CroppedImage(720,255)
+	</div>
+	<div class="info-blog">
+		<h3>
+			<a href="$Link">$Title</a>
+		</h3>
+		<p>$Description</p>
+	</div>
+</div>
+<% end_loop %>
+```
+Give it a try. Click on one of the regions. The expected result should be a 404.
 
-<div class="actions">
-    <a class="action">Do this</a>
+### Getting the DataObject in the action
+
+Fortunately, we know how to fix this 404 now. Let's create a `show` method in `RegionsPage_Controller` and whitelist it in `$allowed_actions`.
+
+```php
+class RegionsPage_Controller extends Page_Controller {
+
+	private static $allowed_actions = array (
+		'show'
+	);
+
+	public function show(SS_HTTPRequest $request) {
+		
+	}
+
+}
+```
+
+We're not doing anything new here, other than ensuring that the `show` method gets its `SS_HTTPRequest` argument. We'll need that object for getting the ID.
+
+Now that we have the skeleton of how this is going to work, we'll build out the `show` method to fetch and return the Region being requested.
+
+```php
+class RegionsPage_Controller extends Page_Controller {
+        //...
+	public function show(SS_HTTPRequest $request) {
+		$region = Region::get()->byID($request->param('ID'));
+
+		if(!$region) {
+			return $this->httpError(404,'That region could not be found');
+		}
+
+		return array (
+			'Region' => $region
+		);
+	}
+
+}
+```
+
+This should be pretty intuitive, but let's walk through it.
+* We get the region by the ID contained in the `ID` request parameter. If that parameter is null, we don't have to worry. The `byID()` method fails gracefully.
+* If a region doesn't exist, return a 404.
+* Return a new variable, `$Region` to the template. (we'll deal with this next)
+
+## Rendering a DataObject as a page
+
+As we saw in the debug output of the request handler, the `$Action` parameter maps to a method called `handleAction` on our controller. While our action method itself is designed to do everything it needs to do, the `handleAction()` method that invokes this method is somewhat opinionated. Specifically, it will automatically select a template for us, unless we declare otherwise.
+
+A controller action will try to render a template following the naming convention ``[PageType]_[actionName].ss``. In our case, that gives us `RegionsPage_show.ss`. Let's create that template.
+
+Copy your `themes/one-ring/templates/Layout/Page.ss` to `RegionsPage_show.ss` in the same location. Remove the `<div class="main ...">` block, and in its place, render some content from the `$Region` object we passed. This is a great opportunity to use the `<% with %>` block.
+
+*themes/one-ring/templates/Layout/RegionsPage_show.ss* (line 5)
+```html
+<div class="main col-sm-8">
+	<% with $Region %>
+		<div class="blog-main-image">
+			$Photo.SetWidth(750)
+		</div>
+		$Description
+	<% end_with %>
 </div>
 ```
-```css
-ul.notifications li.notification, .actions a.action {
-    background: red;
-    color:white;
+
+Try clicking on a region now and see that you get its detail page.
+
+One thing that's a bit odd right now is that the `$Description` field is presented exactly the same way on the list view as it is on the detail view, which makes this click effectively pointless. Let's update the `Region` DataObject to store its `Description` field as an `HTMLText` field so that it could conceivably be much longer.
+
+*mysite/code/Region.php*
+```php
+class Region extends DataObject {
+
+	private static $db = array (
+		'Title' => 'Varchar',
+		'Description' => 'HTMLText',
+	);
+```
+
+Run `dev/build`.
+
+We'll also need to update the CMS field for `Description`.
+
+```php
+class Region extends DataObject {
+        //...
+	public function getCMSFields() {
+		$fields = FieldList::create(
+			TextField::create('Title'),
+			HtmlEditorField::create('Description'),
+			$uploader = UploadField::create('Photo')
+		);
+        //...
+```
+
+Now on `RegionsPage.ss`, let's just use `$Description.FirstParagraph`.
+
+## Adding pseudo-page behaviour to a DataObject
+
+There are still a few things missing from making this DataObject really feel like a page. The most glaring problem is that the title of the page is still *Regions*, rather than the more appropriate title of the Region we're looking at. Normally, we'd find the `$Title` variable in our template and simply change it to `$Region.Title`, but that variable doesn't live in the `RegionsPage_show.ss` template, so we'll need to override it in the controller.
+
+### Overloading model properties in the controller
+
+Remember the array we passed to the template containing our custom variable `$Region`? We can use that to overload properties that the template would normally infer from the model. Let's add `Title` to that list.
+
+*mysite/code/RegionsPage.php*
+```php
+class RegionsPage_Controller extends Page_Controller {
+        //...
+	public function show(SS_HTTPRequest $request) {
+                //...
+		return array (
+			'Region' => $region,
+			'Title' => $region->Title
+		);
+	}
+
 }
 ```
 
-Versus using a more horizontal pattern:
-```html
-<ul class="notifications">
-    <li class="notification alert">Some text here</li>
-</ul>
+Refresh the page and see that we get a new title.
 
-<div class="actions">
-    <a class="action alert">Do this</a>
+While the new title is showing on the page itself, it is not affecting the `<title>` tag. That's because, back in Lesson 3, we handed over control over the title tag to `$MetaTags`. Back in that lesson, we discussed the option to pass a parameter of `false` to the `$MetaTags` function to suppress the title tag, and customise it as we see fit. Let's do that now.
+
+*themes/one-ring/templates/Page.ss* (line 8)
+```html
+	$MetaTags(false)
+	<title>One Ring Rentals: $Title</title>
+```
+Refresh the page, and see that the title tag is now working.
+
+### Creating peer navigation
+
+Another enhancement we can make is the perception of hierarchy. We can use our subnavigation section to display all the peer regions, with some state applied to the current one.
+
+*themes/one-ring/templates/Layout/RegionsPage_show.ss* (line 15)
+```html
+<div class="sidebar gray col-sm-4">
+	<h2 class="section-title">Regions</h2>
+	<ul class="categories subnav">
+		<% loop $Regions %>
+			<li class="$LinkingMode"><a class="$LinkingMode" href="$Link">$Title</a></li>
+		<% end_loop %>
+	</ul>
 </div>
 ```
 
-```css
-.alert {
-    background: red;
-    color: white;
+Remember that, even though the content is all driven by the `Region` object, we're still in the scope of `RegionsPage_Controller`, so we step into `<% loop $Regions %>` to get that `has_many` relation that we also use on list view.
+
+Refresh the page and see that the regions are now all displaying.
+
+### Adding navigational state
+
+We're still missing the "current" state for the region. That's because the method `$LinkingMode` doesn't exist on a DataObject by default, so we need to write our own.
+
+*mysite/code/Region.php*
+```php
+class Region extends DataObject {
+
+        //...
+	public function LinkingMode() {
+		return Controller::curr()->getRequest()->param('ID') == $this->ID ? : 'current' : 'link';
+	}
 }
 ```
+Remember that we're in the context of a simple DataObject here, so we don't have any awareness of the request. `Controller::curr()` is a useful method that gets us the currently active controller. Off that object, we can get the request object that has been assigned to it, and look for `->param('ID')`, the same way we did in our `show()` action. If the ID in the URL matches this region, we return `current`, otherwise we return `link`. We don't have to worry about `section` for something this simple.
 
-By injecting style through a separate class, we can effectively "tag" our element as having a specific set of traits, rather than relying on the inheritance chain to target the element in a specific case. You can think of data extensions in SilverStripe as giving you the option of mixing multiple PHP classes together.
-
-### Extensions vs. other approaches
-If you've ever used Ruby on Rails, or perhaps more popularly, LESS, you've probably already identified this familiar concept as a "mixin," and that is an accurate assessment. SilverStripe extensions are very similar to mixins. They're single-purpose bundles of functionality that augment existing code. 
-
-Further, if you're fairly well-versed in PHP, you might be wondering why SilverStripe has reinvented the concept of *traits*, offered natively in PHP since its version 5.4 release. You're certainly not far off, but there are a few good reasons why SilverStripe uses its own extensions pattern rather than PHP traits.
-
-The first reason is simple history. The open-source release of SilverStripe predates PHP 5.4 by about seven years, so to some extent, extensions were built into the SilverStripe codebase as a long-standing workaround for a shortcoming in PHP.
-
-Further, there are some SilverStripe idiosyncrasies that are not easily replaced by traits, such as the way arrays are merged rather than overloaded by subclasses, and the use of extension points, which we'll look at later in this tutorial.
-
-Most importantly, however, extensions have one major advantage over PHP traits: they can be applied to classes that are outside the user space. That is to say, you can make changes to core classes without actually altering the source code. To reference our last example, it's easy to imagine adding mapping functionality to the `Event` and `Store` classes that live in our project code, but what if we wanted to add features to the core `File` class, or change the behaviour of a specific CMS controller? You wouldn't be able to assign the trait without altering the core class definition, and of course, we don't want to do that, because it will break when we upgrade.
-
-You might wonder why we couldn't just create our own subclass of `File` to add new features to it. We could do that, and it would work just fine in our own project, but the problem is, everyone else -- the CMS and all your modules -- aren't going to know about your special class. They're all still using `File`. So if you want a global change, a subclass isn't a very good option. (You could use [dependency injection](http://doc.silverstripe.org/en/developer_guides/extending/injector/) to force your subclass, but that's a more advanced topic that we'll cover later.)
-
-### Extension gotchas
-We've established that extensions are somewhat of a workaround for functionality that is not offered natively by PHP, so there are bound to be a few tradeoffs and things we need to be aware of when working with extensions.
-
-#### The "overloading" gotcha
-The most common misconception about using extensions is that they can overload methods like subclasses. This is *not the case.* Let's say you want to update the `logIn()` method of the `Member` class so that it pings a thirdparty service, so you write something like this:
-
-```php
-class MyMemberExtension extends DataExtension {
-    
-    protected function apiCall() {
-        //.. call API here...
-    }
-
-    public function logIn($remember = false) {
-       $this->apiCall()
-       //... handle normal login here
-    }
-}
-```
-This won't work. When an extension method collides with the class its extending, the native method always wins. You can only inject *new* functionality into a class. You can't overload it like you do with a subclass.
-
-Fortunately, to address this, SilverStripe offers **extension points**. Extension points are created when the class being extended invokes the `$this->extend()` method and hands off the execution to any and all extensions of the class, providing any references that the extension may want to use.
-
-Let's look again at our login method. In `framework/security/Member.php`, we can see that the `logIn()` method we're trying to update offers two extension points:
-
-```php
-  public function logIn($remember = false) {
-    $this->extend('beforeMemberLoggedIn');
-
-                // ... core login functionality here
-
-    $this->extend('memberLoggedIn');
-  }
-```
-
-Given this knowledge, we could write our extension to use either of those two hooks.
-
-```php
-class MyMemberExtension extends DataExtension {
-    
-    protected function apiCall() {
-        //.. call API here...
-    }
-
-    public function beforeMemberLoggedIn() {
-       $this->apiCall();
-    }
-
-    public function memberLoggedIn() {
-        Email::create(
-           'me@example.com',
-           'admin@example.com',
-           'Somebody logged in!'
-       )->send();
-    }
-}
-```
-
-Think of `$this->extend()` as an event emitter, and the extension classes as event listeners. Extension points aren't offered everywhere, but they do appear in most of the areas of the codebase that you'd want to enhance or modify. As a module developer, it's very important to offer extension points so that others can make customisations as they see fit.
-
-#### The "owner" gotcha
-Let's look again at our absurd function that emails an administrator every time somebody logs in (hopefully this website isn't too popular, right?). Suppose we want to interpolate the user's name in the subject line.
-
-```php
-class MyMemberExtension extends DataExtension {
-
-    public function memberLoggedIn() {
-        Email::create(
-           'me@example.com',
-           'admin@example.com',
-           $this->getName().' logged in!',
-       )->send();
-    }
-}
-```
-
-This is imaginary code, so we'll spare ourselves the trouble of running it. The result would be something like this:
-`
-Fatal error: The method getName() does not exist on MyMemberExtension
-`
-
-How could that be? Member has the method `getName()`, right? Well, remember, we're not dealing with a subclass. We haven't inherited that method in our extension. This class runs parallel to the `Member` class, not beneath it.
-
-Surely we'd want access to all those methods in our extension, and for that, SilverStripe provisions us with a property called `owner`, which refers to the instance of the class we're extending. To make this work, simply invoke `$this->owner->getName()`.
-
-```php
-class MyMemberExtension extends DataExtension {
-
-    public function memberLoggedIn() {
-        Email::create(
-           'me@example.com',
-           'admin@example.com',
-           $this->owner->getName().' logged in!',
-       )->send();
-    }
-}
-```
-
-Here is my promise to you: you will, with 100% certainty, forget about this idiosyncrasy multiple times in your SilverStripe projects. Everyone does. It's an antipattern, it's weird, it's easy to forget, and it's just one of those pitfalls you have to be aware of when working with extensions. So take a deep breath. Embrace it. You'll learn to love that error screen.
-
-### Building and applying an extension
-Believe it or not, we're actually going to write some code now. One of the most common extensions you'll want to write is one for the `SiteConfig` class. SiteConfig is a bit of an anomaly. It's a single-record database table that stores all of your site-wide settings, as seen on the *Settings* tab in the CMS. By default, SiteConfig gives you fields for the Title, Tagline, and Theme of your site, along with some simple global permissions settings. Invariably, you'll want to extend this inventory of fields to store settings that relate to your project.
-
-We're primarily looking for data that appears on every page, so the header and footer of your site are great places to look for content that might be stored in SiteConfig. In our footer, we have some links to social media, and a brief description of the site over on the left. Let's throw all this into SiteConfig.
-
-#### Defining an extension class
-If your extension is going to be used to augment a core class, like SiteConfig, the convention is to use the name of the class you're extending, followed by "Extension." 
-
-*mysite/code/SiteConfigExtension.php*
-```php
-class SiteConfigExtension extends DataExtension {
-
-    private static $db = array (
-        'FacebookLink' => 'Varchar',
-        'TwitterLink' => 'Varchar',
-        'GoogleLink' => 'Varchar',
-        'YouTubeLink' => 'Varchar',
-    );
-
-    public function updateCMSFields(FieldList $fields) {
-        $fields->addFieldsToTab('Root.Social', array (
-            TextField::create('FacebookLink','Facebook'),
-            TextField::create('TwitterLink','Twitter'),
-            TextField::create('GoogleLink','Google'),
-            TextField::create('YouTubeLink','YouTube')
-        ));
-    }
-}
-```
-We define a method for one of the most used extension points in the framework, `updateCMSFields`, which is offered by all DataObject classes to update their CMS interface before rendering. Notice that we don't have to return anything. The SiteConfig class will do that for us. Right now, we're just updating the object it passed us through `$this->extend('updateCMSFields', $fields)`. Since objects are passed by reference in PHP, we can feel free to mutate that `$fields` object as needed.
-
-#### Registering your extension in the config
-To activate our extension, we need to apply it to the `SiteConfig` class. This is done through the Config layer.
-
-*mysite/_config/config.yml*
-```
-SiteConfig:
-  extensions:
-    - SiteConfigExtension
-```
-
-Because we changed the config, we have to flush the cache. Build the database using `dev/build?flush=1`. You should see some new fields.
-
-Now access the Settings tab in the CMS and populate the fields with some values.
-
-Lastly, we'll update our template to use the new fields. All `Page` templates are given a variable called `$SiteConfig` that accesses the single SiteConfig record. Since we'll be getting multiple properties off that object, this is a great opportunity to use the `<% with %>` block.
-
-*themes/one-ring/templates/Includes/Footer.ss* (line 78)
-```html
-<ul class="social-networks">
-  <% with $SiteConfig %>
-    <% if $FacebookLink %>
-      <li><a href="$FacebookLink"><i class="fa fa-facebook"></i></a></li>
-    <% end_if %>
-    <% if $TwitterLink %>
-      <li><a href="$TwitterLink"><i class="fa fa-twitter"></i></a></li>
-    <% end_if %>
-    <% if $GoogleLink %>
-      <li><a href="$GoogleLink"><i class="fa fa-google"></i></a></li>
-    <% end_if %>
-    <% if $YouTubeLink %>
-      <li><a href="#"><i class="fa fa-youtube"></i></a></li>    
-    <% end_if %>
-  <% end_with %>                                
-</ul>
-```
-
-We've skipped over Pinterest, as it probably wouldn't apply to this business. We'll cover RSS in another tutorial, but either way, it won't be a site-wide RSS feed, so we can remove that button, as well.
-
+Refresh the page and see that the current region is now indicated.
