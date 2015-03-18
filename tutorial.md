@@ -4,6 +4,7 @@ In this lesson, we'll introduce the concept of a controller action, which is a U
 * What are controller actions, and how are they used?
 * Create a controller action to render a DataObject
 * Rendering a DataObject as a page
+* Adding pseudo-page behaviour to a DataObject
 
 ## How controller actions work
 
