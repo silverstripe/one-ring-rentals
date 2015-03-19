@@ -4,7 +4,7 @@ class Region extends DataObject {
 
 	private static $db = array (
 		'Title' => 'Varchar',
-		'Description' => 'Text',
+		'Description' => 'HTMLText',
 	);
 
 
@@ -31,7 +31,7 @@ class Region extends DataObject {
 	public function getCMSFields() {
 		$fields = FieldList::create(
 			TextField::create('Title'),
-			TextareaField::create('Description'),
+			HtmlEditorField::create('Description'),
 			$uploader = UploadField::create('Photo')
 		);
 
@@ -42,4 +42,16 @@ class Region extends DataObject {
 
 		return $fields;
 	}
+
+
+	public function Link() {
+		return $this->RegionsPage()->Link('show/'.$this->ID);
+	}
+
+
+	public function LinkingMode() {
+		return Controller::curr()->getRequest()->param('ID') == $this->ID ? 'current' : 'link';
+	}
+
+
 }

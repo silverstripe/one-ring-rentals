@@ -6346,9 +6346,6 @@ a.tp-caption.btn-lg {
   -moz-osx-font-smoothing: grayscale;
   margin-right: 10px;
 }
-.categories li.current:before {
-  color: #ebb002;
-}
 .categories li a {
   color: #74777c;
   padding-top: 8px;
