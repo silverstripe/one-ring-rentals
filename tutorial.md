@@ -8,7 +8,11 @@ In this lesson, we'll introduce the concept of a controller action, which is a U
 
 ## How controller actions work
 
+<<<<<<< HEAD
 Up to this point in our project, for the most part, every page has been on a single URL, which that URL points to a single controller, which renders a single `$Layout` template. However, if you think back to our lesson on forms, you may remember that we were able to extend the URL route for our controller in order to generate and render a form. We did this using a controller action. Forms are just one of many use cases for a controller action.
+=======
+Up to this point in our project, for the most part, every page has been on a single URL, which points to a single controller, which renders a single `$Layout` template. However, if you think back to our lesson on forms, you may remember that we were able to extend the URL route for our controller in order to generate and render a form. We did this using a controller action. Forms are just one of many use cases for a controller action.
+>>>>>>> lesson-14
 
 Using controller actions is simple. All we're talking about is appending a URL part to an existing URL that matches the name of a publicly accessible method on the controller. Let's give it a try.
 
@@ -187,6 +191,10 @@ Copy your `themes/one-ring/templates/Layout/Page.ss` to `RegionsPage_show.ss` in
 	<% end_with %>
 </div>
 ```
+<<<<<<< HEAD
+=======
+We created a new template, so be sure to run `?flush`.
+>>>>>>> lesson-14
 
 Try clicking on a region now and see that you get its detail page.
 
