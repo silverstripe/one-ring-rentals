@@ -7238,6 +7238,25 @@ div.cozy #pp_full_res .pp_inline,div.dark_square #pp_full_res .pp_inline{color:#
 .pattern9_icon{ background-image: url(../images/patterns/pattern9.jpg); }
 
 
+.datepicker {
+	padding:0 15px 15px 15px;
+	table {
+		td {
+			cursor:pointer;
+			&:hover {
+				background:#ddd;
+			}
+		}
+		thead tr:first-child th {
+			background: @highlight;
+			text-align:center;
+			color:white;
+			&.prev, &.next {
+				cursor:pointer;
+			}
+		}
+	}
+}
 
 /* #Media Queries
 ================================================== */

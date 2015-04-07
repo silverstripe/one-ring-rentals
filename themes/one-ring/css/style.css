@@ -7258,6 +7258,24 @@ div.dark_square #pp_full_res .pp_inline {
 .pattern9_icon {
   background-image: url(../images/patterns/pattern9.jpg);
 }
+.datepicker {
+  padding: 0 15px 15px 15px;
+}
+.datepicker table td {
+  cursor: pointer;
+}
+.datepicker table td:hover {
+  background: #ddd;
+}
+.datepicker table thead tr:first-child th {
+  background: #efbb29;
+  text-align: center;
+  color: white;
+}
+.datepicker table thead tr:first-child th.prev,
+.datepicker table thead tr:first-child th.next {
+  cursor: pointer;
+}
 /* #Media Queries
 ================================================== */
 @media (min-width: 993px) and (max-width: 1199px) {
