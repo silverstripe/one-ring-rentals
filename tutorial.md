@@ -25,18 +25,18 @@ Let's look at the search form on the home page. We have four parameters we can u
 * Bedrooms (minimum)
 * Keywords
 
-The last two are pretty straightforward, but as for the first two, we really not made any accommodations for the availability of the rentals. That will come in the future, when we add functionality that allows users to book rentals for a given span of dates.
+The last two are pretty straightforward, but as for the first two, we have not made any accommodations for the availability of the rentals. That will come in the future, when we add functionality that allows users to book rentals for a given span of dates.
 
-In the interest of teaching the concept over meeting the requirements of an imaginary website, we're going to create some temporary fields on the `Property` objects that provide that store this data natively on the record. Once users can book rentals, we'll remove these fields, but for now, we just want to get our search form working, so let's add the following:
+In the interest of teaching the concept over meeting the requirements of an imaginary website, we're going to create some temporary fields on the `Property` objects that store this data natively on the record. Once users can book rentals, we'll remove these fields, but for now, we just want to get our search form working, so let's add the following:
 
 *mysite/code/Property.php*
 ```php
 class Property extends DataObject {
 
 	private static $db = array (
-               //...
-		'AvailableStart' => 'Date',
-		'AvailableEnd'=> 'Date'
+	    //...
+            'AvailableStart' => 'Date',
+            'AvailableEnd'=> 'Date'
 	);
 ```
 
@@ -54,6 +54,8 @@ UPDATE Property SET AvailableEnd = FROM_UNIXTIME(
         UNIX_TIMESTAMP(AvailableStart) + FLOOR(1 + (RAND() * 1209600))
 );
 ```
+
+In the attached assets, you'll also find an `assets/` folder that you should drop into your project. It contains several sample images and files that we'll be using to help fill out our records. The database in `import.sql` has already been mapped to these new files, so both these steps should be done concurrently.
 
 Lastly, our keyword search will need to search a property description. We'll add that field, as well.
 
