@@ -102,7 +102,7 @@ class PropertySearchPage_Controller extends Page_Controller {
 
 Run `dev/build?flush`, as we're modifying the database *and* introducing a new template.
 
-Next, go into the CMS and change the *Find a Rental* page to a a *Property Search Page*. Browse to the page on the frontend and confirm that our template is showing.
+Next, go into the CMS and change the *Find a Rental* page to a *Property Search Page*. Browse to the page on the frontend and confirm that our template is showing.
 
 ## Building the search form
 
@@ -214,7 +214,7 @@ public function PropertySearchForm() {
 }
 ```
 
-Refresh the page, and give the search another try. The URL should look a bit cleaner now.
+Refresh the page, and give the search another try. The URL should look a bit cleaner now. If the `SecurityID` parameter is still in the URL, try removing the entire query string from the address bar and try again.
 
 ## Applying filters to a DataList
 
