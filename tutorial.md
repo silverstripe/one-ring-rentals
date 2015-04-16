@@ -284,7 +284,7 @@ class Region extends DataObject {
 
         //...
 	public function LinkingMode() {
-		return Controller::curr()->getRequest()->param('ID') == $this->ID ? : 'current' : 'link';
+		return Controller::curr()->getRequest()->param('ID') == $this->ID ? 'current' : 'link';
 	}
 }
 ```
