@@ -9,7 +9,7 @@ class PropertySearchPage_Controller extends Page_Controller {
 
 
 	public function index(SS_HTTPRequest $request) {
-		$properties = Property::get()->limit(20);
+		$properties = Property::get();
 
 		if($search = $request->getVar('Keywords')) {
 			$properties = $properties->filter(array(
@@ -53,9 +53,14 @@ class PropertySearchPage_Controller extends Page_Controller {
 			));
 		}
 
+		$paginatedProperties = PaginatedList::create(
+			$properties,
+			$request
+		)->setPageLength(15)
+		 ->setPaginationGetVar('s');
 
 		return array (
-			'Results' => $properties
+			'Results' => $paginatedProperties
 		);
 	}
 
