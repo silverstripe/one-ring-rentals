@@ -274,3 +274,50 @@ First, we'll add an `animate()` method that will handle the automatic scrolling.
 
 Lastly, we make export the `.ajax()` call to a function, so that both the pagination links and the browser back button will be able to invoke it when we add an `onpopstate` event.
 
+### One last thing...
+
+After the publication of this tutorial, several users reported a bug with the way the Ajax history was working. To replicate it, let's just try paginating a few times, and clicking on a non-Ajax link that will take us to another page. Now click the back button. Yikes! We're only getting back the content for the Ajax request. You may not be able to replicate this in all browsers. Google Chrome seems to reliably reproduce the bug, though. So why is this happening?
+
+The short answer is that good browsers like Google Chrome are really, really smart. That's what makes them so fast. In this case, perhaps it's being a bit too smart, but ultimately, we have made a pretty critical mistake.
+
+Earlier in the tutorial, we talked about a common endpoint for standard HTTP requests and XHRs. While it's true that both types of requests should be piped through the same controller action, the idea that they should share exactly the same URL is flawed. One of the pillars of HTTP caching, and the HTTP protocol in general, is that a URL should only be considered unique. It should only point to one body of content. When URLs return various responses based on arbitrary external state like session state or, in our case, the type of request, bad things can happen, because the browser has cached that URL, believing that it has already seen the response that it generates. This is great for performance, but bad for the type of turnkey functionality we're trying to implement.
+
+We need to update our Javascript so that the Ajax request has a slightly different URL than the URL that is being stored in history. Let's just append a simple `ajax=1` request parameter to the URL.
+
+```js
+    // Pagination
+    if ($('.pagination').length) {
+        var paginate = function (url) {
+            var param = '&ajax=1',
+                ajaxUrl = (url.indexOf(param) === -1) ? 
+                           url + '&ajax=1' : 
+                           url,
+                cleanUrl = url.replace(new RegExp(param+'$'),'');
+
+            $.ajax(ajaxUrl)
+                .done(function (response) {
+                    $('.main').html(response);
+                    $('html, body').animate({
+                        scrollTop: $('.main').offset().top
+                    });
+                    window.history.pushState(
+                        {url: cleanUrl},
+                        document.title,
+                        cleanUrl
+                    );
+                })
+                .fail (function (xhr) {
+                    alert('Error: ' + xhr.responseText);
+                });
+        };
+```
+
+Let's walk through this.
+* First, we generate the `ajaxUrl` variable, is whatever URL the function is given, plus an `ajax=1` parameter. Notice that we have to be careful not to add the `ajax` parameter multiple times. We have to do this because the pagination links preserve all the `GET` parameters from the Ajax request, so they will all contain query strings like `?start=10&ajax=1`.
+* Next, we generate the `cleanURL` variable, which is the URL with the `ajax=1` removed. Again, the pagination links all have `ajax=1` on them, so this sanitisation is important.
+* We then update the Ajax request to go to the `ajaxUrl` instead of the given URL.
+* Lastly, we store the `cleanUrl` in the browser history, so that when the back button is pressed, the browser knows that the Ajax request and the standard request are different.
+
+In order to test this, it is imperative that you clear your browser cache. This whole bug revolves around eager caching, so you won't see any results until you do so. If you're using Google Chrome, you may want to try Incognito Mode for this.
+
+Now the back button is returning the expected result, and things are looking and feeling much better.
