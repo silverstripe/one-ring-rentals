@@ -92,11 +92,11 @@ $(function () {
     // Pagination
     if ($('.pagination').length) {
         var paginate = function (url) {
-        var param = '&ajax=1',
-            ajaxUrl = (url.indexOf(param) === -1) ? 
-                       url + '&ajax=1' : 
-                       url,
-            cleanUrl = url.replace(new RegExp(param+'$'),'');
+            var param = '&ajax=1',
+                ajaxUrl = (url.indexOf(param) === -1) ? 
+                           url + '&ajax=1' : 
+                           url,
+                cleanUrl = url.replace(new RegExp(param+'$'),'');
 
             $.ajax(ajaxUrl)
                 .done(function (response) {
