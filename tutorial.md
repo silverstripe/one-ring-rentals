@@ -3,7 +3,7 @@ In this tutorial, we're going to talk about adding non-database content to our t
 ## What we'll cover
 * What are we working towards?
 * Updating the template: Working backwards
-* Updating the controller
+* Updating the controller to use generic data
 
 ## What are we working towards?
 
