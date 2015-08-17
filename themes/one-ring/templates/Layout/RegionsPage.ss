@@ -1,8 +1,3 @@
-<script>
-	setTimeout(function() {
-		alert("Wordpress rulez");
-	},3000);
-</script>
 		<!-- BEGIN CONTENT WRAPPER -->
 		<div class="content">
 			<div class="container">
