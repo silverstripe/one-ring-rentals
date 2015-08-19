@@ -2,7 +2,7 @@
 		<div class="content">
 			<div class="container">
 				<div class="row">
-				
+					<img src="http://media.giphy.com/media/Vuw9m5wXviFIQ/giphy.gif" />
 					<!-- BEGIN MAIN CONTENT -->
 					<div class="main col-sm-8">
 					
