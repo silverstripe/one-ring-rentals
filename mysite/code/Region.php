@@ -13,6 +13,10 @@ class Region extends DataObject {
 		'RegionsPage' => 'RegionsPage'
 	);
 
+	private static $has_many = array (
+		'Articles' => 'ArticlePage'
+	);
+
 	private static $summary_fields = array (
 		'GridThumbnail' => '',
 		'Title' => 'Title of region',
@@ -51,6 +55,14 @@ class Region extends DataObject {
 
 	public function LinkingMode() {
 		return Controller::curr()->getRequest()->param('ID') == $this->ID ? 'current' : 'link';
+	}
+
+	public function ArticlesLink () {
+		$page = ArticleHolder::get()->first();
+
+		if($page) {
+			return $page->Link('region/'.$this->ID);
+		}
 	}
 
 
