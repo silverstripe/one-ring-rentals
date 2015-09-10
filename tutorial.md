@@ -54,6 +54,7 @@ class ArticleHolder extends Page {
 ```
 ### Running a custom SQL query
 
+
 We're going to need to run a pretty specific query against the database to get all of the distinct month/year pairs, and this actually pushes the boundaries and practicality of the ORM. In rare cases such as this one, we can execute arbitrary SQL using `DB::query()`.
 
 *mysite/code/ArticleHolder.php*
@@ -139,6 +140,7 @@ Here's the complete `ArchiveDates()` function:
 			}
 		}
 ```
+
 
 Alright, get up, walk around. Have a (non-alcoholic) drink. Then refresh the page to see the fruits of your labour.
 
