@@ -1,276 +1,255 @@
-In this tutorial, we're going to add some Ajax behaviour to our site.
+In the previous tutorial, we activated most of the sidebar filters for our Travel Guides section. We left out the date archive filter, however, because it introduced some complexity. Let's now dive into that complexity and get it working.
 
-## What we'll cover
-* Writing the Javascript
-* An overview of ViewableData
-* Rendering a partial template
-* Adding some UX enhancements
+### Adding date filter links to the template
 
+Looking at the template, we first have to generate a list of all the distinct month/year combinations for all the articles. Let's start by working backwards, and we want the end result to be on the template.
 
-## Writing the Javascript
-
-In the last tutorial, we added pagination to our list of search results. Let's now enhance the user experience a bit by adding Ajax to the pagination links.
-
-Before we do anything, we'll need to add some JavaScript that will add this functionality. We'll do this in our catch-all JavaScript file, `scripts.js`.
-
-*themes/one-ring/js/scripts.js*
-```js
-// Pagination
-if ($('.pagination').length) {
-	$('.main').on('click','.pagination a', function (e) {
-	    e.preventDefault();
-	    var url = $(this).attr('href');
-	    $.ajax(url)
-	        .done(function (response) {
-	            $('.main').html(response);
-	        })
-	        .fail (function (xhr) {
-	            alert('Error: ' + xhr.responseText);
-	        });
-	});
-}
+*themes/one-ring/templates/Layout/ArticleHolder.ss*
+```html
+  <!-- BEGIN ARCHIVES ACCORDION -->
+	<h2 class="section-title">Archives</h2>
+	<div id="accordion" class="panel-group blog-accordion">
+		<div class="panel">
+		<!--
+			<div class="panel-heading">
+				<div class="panel-title">
+					<a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" class="">
+						<i class="fa fa-chevron-right"></i> 2014 (15)
+					</a>
+				</div>
+			</div>
+		-->
+			<div id="collapseOne" class="panel-collapse collapse in">
+				<div class="panel-body">
+					<ul>
+					<% loop $ArchiveDates %>
+						<li><a href="$Link">$MonthName $Year ($ArticleCount)</a></li>
+					<% end_loop %>
+					</ul>
+				</div>
+			</div>
+		</div>	
+	</div>
+	<!-- END  ARCHIVES ACCORDION -->
 
 ```
+First off, these dates were grouped by year. We've commented that out for now. We can address that in a future tutorial on grouped lists. In the loop, each date entry has a `$Link` method that will go to the filtered article list, `$MonthName` and `$Year` properties, and an `$ArticleCount` property.
 
-This is pretty specific to this use-case. Further down the track, we may find that we're adding a lot of Ajax events that closely resemble this, so we may want to make it more reusable at some point, but for now, let's just get this working.
+This is all well and good, but what are these objects?
 
-Let's give this a try. Click on a link in the pagination and see if it works.
+In the previous tutorial, we dicussed dealing with arbitrary template data, and this is a perfect use case. These date archive objects need to be iterable in a loop, and they need dynamic properties. We'll need to define them as simple `ArrayData` objects.
 
-It kind of works, right? But we've still got a way to go. The controller is returning the entire page -- from `<html>` to </html`> into our `.main` div. Not good, but it is the expected result. The Ajax URL is just the `href` attribute, so anything different would be unusual.
+Let's build that list in the model of our `ArticleHolder` page type.
 
-So what do we do? Change the URL in our Javascript to use something other than `href`? We could use an alternative URL in something like `data-ajax-url`. That's actually not necessary. We always aim to keep things tidy with single endpoints. The controller ideally know as little about the UI as possible, and setting up a separate endpoint for Ajax requests in this case would be antithetical to that. We'll keep the same endpoint, and we'll just assign the controller the ability to detect Ajax requests.
-
-## Detecting Ajax in a controller
-
-Let's update `PropertySearchPage.php` to detect Ajax.
-
-*mysite/code/PropertySearchPage.php*
+*mysite/code/ArticleHolder.php*
 ```php
-public function index(SS_HTTPRequest $request) {
+class ArticleHolder extends Page {
+	//...
+
+	public function ArchiveDates() {
+		$list = ArrayList::create();
+
+		return $list;
+	}
+```
+### Running a custom SQL query
+
+We're going to need to run a pretty specific query against the database to get all of the distinct month/year pairs, and this actually pushes the boundaries and practicality of the ORM. In rare cases such as this one, we can execute arbitrary SQL using `DB::query()`.
+
+*mysite/code/ArticleHolder.php*
+```php
+	public function ArchiveDates() {
+		$list = ArrayList::create();
+		$stage = Versioned::current_stage();		
+
+		$query = new SQLQuery(array ());
+		$query->selectField("DATE_FORMAT(`Date`,'%Y_%M_%m')","DateString")
+			  ->setFrom("ArticlePage_{$stage}")
+			  ->setOrderBy("Date", "ASC")
+			  ->setDistinct(true);
+```
+To work outside the ORM, we can use the `SQLQuery` class to declaratively build a string of SQL. We pass an empty array to the constructor, because by default it will select `*`. We then just build the query using self-descriptive, chainable methods.
+
+The main advantage to this layer of abstraction is that it's platform agnostic, so that if someday you change database platforms, you don't need to update any syntax. All queries end up in `SQLQuery` eventually. `SiteTree::get()` is just a higher level of abstraction that builds an `SQLQuery` object. To build a really custom query, we're just going further down the food chain, so to speak.
+
+One major drawback of working outside the ORM is that we can no longer take versioning for granted. We have to be explicit about what table we want to select from. It is therefore imperative to check the current stage, and apply the necessary suffix to the table, e.g. *ArticlePage_Live*. Again, it's rare that you have to deal with stuff like this.
+
+Don't worry too much if this query is over your head. It's not often that we have to do things like this. What this query is doing is creating a SKU for each article that contains its year, month number, and month name, separated by underscores, like this:
+
+```
+2015_05_May
+```
+
+We then use the `setDistinct()` method to ensure we only get one of each.
+
+If you're wondering why we need the month name, as the year and month number are enough to satisfy the `DISTINCT` flag on their own, the answer is, we don't really need it, but it will help. We're getting the month name only for semantic purposes, to save time when we create the links on the template. The friendly month name is needed for the link text, but the month number is what we need for the URL.
+
+Now all we have to do is loop through that database result to create our final list of date objects.
+
+*mysite/code/ArticleHolder.php*
+```php
+		if($result) {
+			while($record = $result->nextRecord()) {
+				list($year, $monthName, $monthNumber) = explode('_', $record['DateString']);
+
+				$list->push(ArrayData::create(array(
+					'Year' => $year,
+					'MonthName' => $monthName,
+					'MonthNumber' => $monthNumber,
+					'Link' => $this->Link("date/$year/$monthNumber"),
+					'ArticleCount' => ArticlePage::get()->where("
+							DATE_FORMAT(`Date`,'%Y_%m') = '{$year}_{$monthNumber}'
+							AND ParentID = {$this->ID}
+						")->count()
+				)));
+			}
+		}
+```
+
+We loop through each record using the `nextRecord()` method. For each record, we explode the SKU into its component variables -- the year, the month number, and the month name -- and assign them to properties of an `ArrayData` object. We also create a link to the `date/$year/$monthNumber` route that we created in `ArticleHolder`. Lastly, we run a query against `ArticlePage` to get the number of articles that match this date SKU. Notice that in this case, we can safely just match the year and month number.
+
+Here's the complete `ArchiveDates()` function:
+
+*mysite/code/ArticleHolder.php*
+```php
+	public function ArchiveDates() {
+		$list = ArrayList::create();
+		$stage = Versioned::current_stage();
+
+		$query = new SQLQuery(array ());
+		$query->selectField("DATE_FORMAT(`Date`,'%Y_%M_%m')","DateString")
+			  ->setFrom("ArticlePage_{$stage}")
+			  ->setOrderBy("Date", "ASC")
+			  ->setDistinct(true);
+
+		if($result) {
+			while($record = $result->nextRecord()) {
+				list($year, $monthName, $monthNumber) = explode('_', $record['DateString']);
+
+				$list->push(ArrayData::create(array(
+					'Year' => $year,
+					'MonthName' => $monthName,
+					'MonthNumber' => $monthNumber,
+					'Link' => $this->Link("date/$year/$monthNumber"),
+					'ArticleCount' => ArticlePage::get()->where("
+							DATE_FORMAT(`Date`,'%Y%m') = '{$year}{$monthNumber}'
+							AND ParentID = {$this->ID}
+						")->count()
+				)));
+			}
+		}
+```
+
+Alright, get up, walk around. Have a (non-alcoholic) drink. Then refresh the page to see the fruits of your labour.
+
+### Applying the date filter in the controller
+
+The last thing we need to do to make the date archive work is set up that controller action to deal with the incoming `date/$year/$month` routes.
+
+*mysite/code/ArticleHolder.php*
+```php
+class ArticleHolder_Controller extends Page_Controller {
 	
 	//...
 
-	if($request->isAjax()) {
-		return "Ajax response!";
-	}
-	
-	return array (
-		'Results' => $paginatedProperties
-	);
-}
-```
+	public function date(SS_HTTPRequest $r) {
+		$year = $r->param('ID');
+		$month = $r->param('OtherID');
 
-Now give the link a try, and see what we get. You should see your custom Ajax response. Now we just need to return some partial content. Before we do that, let's talk a bit about a key player in SilverStripe Framework called `ViewableData`.
+		if(!$year) return $this->httpError(404);
 
-## An overview of ViewableData
-
-To establish a basis for the next section of this lesson, we'll need to know more about how `ViewableData` objects work. `ViewableData` is a primitive class in SilverStripe that essentially allows its public properties and methods to render content to a template. The most common occurance of `ViewableData` objects is in `DataObject` instances, which we've been working with on templates exclusively. But templates are capable of rendering much more than database content. You just need to go further up the inheritance chain, above `DataObject` to `ViewableData`, or a subclass thereof.
-
-Let's look at a simple example of `ViewableData`.
-
-```php
-class Address extends ViewableData {
-	
-	public $Street = '123 Main Street';
-
-	public $City = 'Compton';
-
-	public $Zip = '90210';
-
-	public $Country = 'US';
-
-	public function Country() {
-		return MyGeoLibrary::get_country_name($this->Country);
-	}
-
-	public function getFullAddress() {
-		return sprintf(
-			'%s<br>%s %s<br>%s'
-			$this->Street,
-			$this->City,
-			$this->Zip,
-			$this->Country() 
-		);
-	}
-}
-```
-
-Now let's create a template to render our `Address` object.
-
-*AddressTemplate.ss*
-```html
-<p>I live on $Street in $City.</p>
-<p>My full address is $FullAddress.</p>
-```
-
-As you can see, we're rendering data using a combination of both methods and properties. `ViewableData` has a very specific way of resolving the template variables on the object:
-
-* Check if there public method on the object called [VariableName]
-* If not, check if a method called "get[VariableName]" exists
-* If not, check if there is a public property named [VariableName]
-* Otherwise, call "getField([VariableName])"
-
-`getField()` is a fallback method. For the base `ViewableData` class, it simply returns `$this->$VariableName`. The idea is that subclasses can invoke their own handlers for this. For example, in `DataObject`, `getField()` looks to the `$db` array.
-
-All `ViewableData` objects know how to render themselves on templates. To do that, simply invoke `renderWith($templateName)` on the object, and the template variables will be scoped to that object.
-
-```php
-$myViewableData = Address::create();
-echo $myViewableData->renderWith('AddressTemplate');
-```
-
-Another really useful feature of `ViewableData` is that the object itself can be called on a template and render itself. If we were to simply call `$MyAddressObject` on a template, SilverStripe would attempt to invoke a method called `forTemplate()` on the object to render it as a string. In our example address object, that might look like this:
-
-```php
-class Address extends ViewableData {
-	
-	//...	
-
-	public function forTemplate() {
-		return $this->getFullAddress();
-	}
-}
-```
-
-A great example of this is SilverStripe's `Image` class. When you call `$MyImage` on a template, it invokes its `forTemplate()` method, which returns a string of HTML representing an `<img />` tag with all the correct attributes and values.
-
-## Rendering a partial template
-
-So now that we have a good understanding of `ViewableData`, let's play around with some of its features. Right now, we're just returning a string to the template for our Ajax response. Let's instead return a partial template.
-
-At the centre of dealing with Ajax responses is the use of includes in your Layout template. Let's take everything in the `.main` div, and export it to an include called `PropertySearchResults`.
-
-*themes/one-ring/templates/Includes/PropertySearchResults.ss*
-```html
-<!-- BEGIN MAIN CONTENT -->
-<div class="main col-sm-8">
-	<% include PropertySearchResults %>				
-</div>	
-<!-- END MAIN CONTENT -->
-```
-
-Reload the page with `?flush` to get the new template.
-
-Now, returning an Ajax response is trivial. Simply render the include.
-
-```php
-class PropertySearchPage_Controller extends Page_Controller {
-
-
-	public function index(SS_HTTPRequest $request) {
-
-		//...
+		$startDate = $month ? "{$year}-{$month}-01" : "{$year}-01-01";
 		
-		if($request->isAjax()) {
-			return $this->renderWith('PropertySearch');
-		}
-		
-		//..
+		if(strtotime($startDate) === false) {
+			return $this->httpError(404, 'Invalid date');
+		} 
 	}
-}
 ```
 
-Let's try it out. It's not quite working right. We're getting a "no results" message when we paginate. That's because the `$Results` variable is not exposed to the template through `renderWith()`. It's just a local variable in our `index()` method. We have two choices here:
+We'll start by running a sanity check to ensure that we at least have a year in the URL. Then, we'll create a start date of either the first of the month or the first of the year. If for some reason the year or month values are invalid, and don't pass the `strtotime()` test, we throw an HTTP error.
 
-* Assign `$paginatedProperties` to a public property on the controller
-* Explicitly pass it to the template using `customise()`.
+Now, we'll create the boundary for the end date, and run the query.
 
-Of these two options, the latter is much more favourable. There are cases where the first option makes more sense, but in this case, explicitly passing the list makes our `PropertySearchResults` template more reusable, and assigning a new member property would pollute our controller unnecessarily. Let's make that update now.
-
+*mysite/code/ArticleHolder.php*
 ```php
-class PropertySearchPage_Controller extends Page_Controller {
+		$adder = $month ? '+1 month' : '+1 year';
+		$endDate = date('Y-m-d', strtotime(
+						$adder, 
+						strtotime($startDate)
+					));
 
-
-	public function index(SS_HTTPRequest $request) {
-
-		//...
-		
-		if($request->isAjax()) {
-			return $this->customise(array
-				'Results' => $paginatedResults
-			))->renderWith('PropertySearchResults');
-		}
+		$this->articleList = $this->articleList->filter(array(
+			'Date:GreaterThanOrEqual' => $startDate,
+			'Date:LessThan' => $endDate 
+		));
 
 		return array (
-			'Results' => $paginatedProperties
+			'StartDate' => DBField::create_field('SS_DateTime', $startDate),
+			'EndDate' => DBField::create_field('SS_DateTime', $endDate)
 		);
-	}
-}
 ```
-We now have repeated our array of data, so let's clean that up a bit.
 
+A really key detail of this function is that we return proper `DBField` objects to the template. If you'll remember from the early tutorials, controllers don't just return scalar values to the template. They're actually first-class, intelligent objects. By default, they're cast as `Text` objects, so we'll be more explicit and ensure that `StartDate` and `EndDate` are cast as dates. This will afford us the option to format them on the template.
+
+You can achieve the same result more declaratively using the `$casting` setting on in your controller. We'll discuss that in a future tutorial and clean this up a bit.
+
+For now, here is the complete `date()` controller action:
+
+*mysite/code/ArticleHolder.php*
 ```php
-class PropertySearchPage_Controller extends Page_Controller {
+class ArticleHolder_Controller extends Page_Controller {
+	
+	//...
 
+	public function date(SS_HTTPRequest $r) {
+		$year = $r->param('ID');
+		$month = $r->param('OtherID');
 
-	public function index(SS_HTTPRequest $request) {
+		if(!$year) return $this->httpError(404);
 
-		//...
+		$startDate = $month ? "{$year}-{$month}-01" : "{$year}-01-01";
 		
-		$data = array (
-			'Results' => $paginatedProperties
-		);
-
-		if($request->isAjax()) {
-			return $this->customise($data)
-						 ->renderWith('PropertySearchResults');
+		if(strtotime($startDate) === false) {
+			return $this->httpError(404, 'Invalid date');
 		}
 
-		return $data;
+		$adder = $month ? '+1 month' : '+1 year';
+		$endDate = date('Y-m-d', strtotime(
+						$adder, 
+						strtotime($startDate)
+					));
+
+		$this->articleList = $this->articleList->filter(array(
+			'Date:GreaterThanOrEqual' => $startDate,
+			'Date:LessThan' => $endDate 
+		));
+
+		return array (
+			'StartDate' => DBField::create_field('SS_DateTime', $startDate),
+			'EndDate' => DBField::create_field('SS_DateTime', $endDate)
+		);
+
 	}
-}
+
+	//...
 ```
 
-Try it now. It's looking much better!
+Refresh the browser and try clicking on some of the date archive links, and see that you're getting the expected results.
 
-## Adding some UX enhancements
+The last thing we need to do is pull our filter headers into the listings to show the user the state of the list. Each controller action returns its own custom template variables that we can check.
 
-There are two major shortcomings of this user experience:
-* The scroll stays fixed to the bottom of the results, leaving the user with little indication that the content has been updated
-* The URL is not updated, so a page refresh after paginating will take the user back to the first page
-
-Let's clean up both of these things now, with some updates to our Javascript.
-
-*themes/one-ring/js/scripts.js*
-```js
-// Pagination
-if ($('.pagination').length) {
-    var paginate = function (url) {
-        $.ajax(url)
-            .done(function (response) {
-                $('.main').html(response);
-                $('html, body').animate({
-                    scrollTop: $('.main').offset().top
-                });
-                window.history.pushState(
-                    {url: url},
-                    document.title,
-                    url
-                );    
-            })
-            .fail(function (xhr) {
-                alert('Error: ' + xhr.responseText);
-            });
-
-    }
-    $('.main').on('click','.pagination a', function (e) {
-        e.preventDefault();
-        var url = $(this).attr('href');
-        paginate(url);
-    });
-    
-    window.onpopstate = function(e) {
-        if (e.state.url) {
-            paginate(e.state.url);
-        }
-        else {
-            e.preventDefault();
-        }
-    };        
-}
+*themes/one-ring/templates/Layout/ArticleHolder.ss*
+```html
+	<div id="blog-listing" class="list-style clearfix">
+		<div class="row">
+			<% if $SelectedRegion %>
+				<h3>Region: $SelectedRegion.Title</h3>
+			<% else_if $SelectedCategory %>
+				<h3>Category: $SelectedCategory.Title</h3>
+			<% else_if $StartDate %>
+				<h3>Showing $StartDate.Full to $EndDate.Full</h3>
+			<% end_if %>
 
 ```
-First, we'll add an `animate()` method that will handle the automatic scrolling. Then, we'll push some state to the browser history using `pushState`.
 
-Lastly, we make export the `.ajax()` call to a function, so that both the pagination links and the browser back button will be able to invoke it when we add an `onpopstate` event.
-
+This is where having proper `SS_Datetime` objects comes in really handy, as we can format the date right on the template.
