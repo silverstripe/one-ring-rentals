@@ -1,3 +1,5 @@
+## Lesson 3: Adding Dynamic Content
+
 ### Adding primary navigation
 
 To create our main menu, we’ll use a global method that SilverStripe provides to all your templates: the **$Menu** function. **$Menu** returns a list of all the pages in a given section of the site. Because it returns a set rather than a single value, we’ll need to loop through the result to create a menu of varying length. Inside the `<ul>` tag that wraps the primary navigation, remove the hardcoded `<li>` tags and add the following syntax:
