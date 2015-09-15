@@ -1,4 +1,4 @@
-## Adding Custom Fields to a Page
+## Lesson 6: Adding Custom Fields to a Page
 
 ### Taking inventory of custom fields
 
