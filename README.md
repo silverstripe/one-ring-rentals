@@ -1,3 +1,5 @@
+## Lesson 1: Creating Your First Theme
+
 In this tutorial, we’ll cover how to build your first theme in SilverStripe. The SilverStripe installer ships with its own default theme -- Simple, but more than likely, you’ll want to override this to use your own custom design.
 
 ### What is a theme?
