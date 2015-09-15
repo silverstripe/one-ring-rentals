@@ -1,4 +1,4 @@
-## The Holder/Page Pattern
+## Lesson 5: The Holder/Page Pattern
 
 In this tutorial we’re going to focus on the Travel Guides section of our website for this topic. As we can see in the designs, there are two templates required for this section -- a list view, or “hub” page, and a detail page. This is one of the most common patterns in web content, used throughout the web; think of news listings, image galleries, even a Twitter timeline.. To accomplish this in SilverStripe, we’ll use a very common convention.
 
