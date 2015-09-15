@@ -1,3 +1,5 @@
+## Lesson 2: Migrating Static Templates Into Your Theme
+
 ### Drop your bags
 
 You know that feeling you get when you’ve been traveling all day, and you finally breach the door to your hotel room? You drop your bags in the first vacant spot you can find, suspending your impending obligation to unpack and get organised, and gift yourself that moment of relaxation.
