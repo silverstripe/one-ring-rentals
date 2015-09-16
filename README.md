@@ -1,10 +1,6 @@
-In this lesson, we'll introduce the concept of a controller action, which is a URL route that executes a function on a controller.
+## Lesson 14: Controller Actions / DataObjects as Pages
 
-## What we'll cover
-* What are controller actions, and how are they used?
-* Create a controller action to render a DataObject
-* Rendering a DataObject as a page
-* Adding pseudo-page behaviour to a DataObject
+In this lesson, we'll introduce the concept of a controller action, which is a URL route that executes a function on a controller.
 
 ## How controller actions work
 
