@@ -1,51 +1,261 @@
-## Overview
+## Lesson 20: Beyond the ORM: Building Custom SQL
 
-Base project folder for a SilverStripe ([http://silverstripe.org](http://silverstripe.org)) installation. Requires additional modules to function:
+In the previous tutorial, we activated most of the sidebar filters for our Travel Guides section. We left out the date archive filter, however, because it introduced some complexity. Let's now dive into that complexity and get it working.
 
- * [`framework`](http://github.com/silverstripe/silverstripe-framework): Module including the base framework
- * [`cms`](http://github.com/silverstripe/silverstripe-cms): Module including a Content Management System
- * `themes/simple` (optional)
+### Adding date filter links to the template
 
-## Installation ##
+Looking at the template, we first have to generate a list of all the distinct month/year combinations for all the articles. Let's start by working backwards, and we want the end result to be on the template.
 
-See [installation on different platforms](http://doc.silverstripe.org/framework/en/installation/),
-and [installation from source](http://doc.silverstripe.org/framework/en/installation/from-source).
+*themes/one-ring/templates/Layout/ArticleHolder.ss*
+```html
+  <!-- BEGIN ARCHIVES ACCORDION -->
+	<h2 class="section-title">Archives</h2>
+	<div id="accordion" class="panel-group blog-accordion">
+		<div class="panel">
+		<!--
+			<div class="panel-heading">
+				<div class="panel-title">
+					<a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" class="">
+						<i class="fa fa-chevron-right"></i> 2014 (15)
+					</a>
+				</div>
+			</div>
+		-->
+			<div id="collapseOne" class="panel-collapse collapse in">
+				<div class="panel-body">
+					<ul>
+					<% loop $ArchiveDates %>
+						<li><a href="$Link">$MonthName $Year ($ArticleCount)</a></li>
+					<% end_loop %>
+					</ul>
+				</div>
+			</div>
+		</div>	
+	</div>
+	<!-- END  ARCHIVES ACCORDION -->
 
-## Bugtracker ##
+```
+First off, these dates were grouped by year. We've commented that out for now. We can address that in a future tutorial on grouped lists. In the loop, each date entry has a `$Link` method that will go to the filtered article list, `$MonthName` and `$Year` properties, and an `$ArticleCount` property.
 
-Bugs are tracked on github.com ([framework issues](https://github.com/silverstripe/silverstripe-framework/issues),
-[cms issues](https://github.com/silverstripe/silverstripe-cms/issues)). 
-Please read our [issue reporting guidelines](http://doc.silverstripe.org/framework/en/misc/contributing/issues).
+This is all well and good, but what are these objects?
 
-## Development and Contribution ##
+In the previous tutorial, we dicussed dealing with arbitrary template data, and this is a perfect use case. These date archive objects need to be iterable in a loop, and they need dynamic properties. We'll need to define them as simple `ArrayData` objects.
 
-If you would like to make changes to the SilverStripe core codebase, we have an extensive [guide to contributing code](http://doc.silverstripe.org/framework/en/misc/contributing/code).
+Let's build that list in the model of our `ArticleHolder` page type.
 
-## Links ##
+*mysite/code/ArticleHolder.php*
+```php
+class ArticleHolder extends Page {
+	//...
 
- * [Changelogs](http://doc.silverstripe.org/framework/en/changelogs/)
- * [Bugtracker: Framework](https://github.com/silverstripe/silverstripe-framework/issues)
- * [Bugtracker: CMS](https://github.com/silverstripe/silverstripe-cms/issues)
- * [Bugtracker: Installer](https://github.com/silverstripe/silverstripe-installer/issues)
- * [Forums](http://silverstripe.org/forums)
- * [Developer Mailinglist](https://groups.google.com/forum/#!forum/silverstripe-dev)
+	public function ArchiveDates() {
+		$list = ArrayList::create();
 
-## License ##
+		return $list;
+	}
+```
+### Running a custom SQL query
 
-	Copyright (c) 2007-2013, SilverStripe Limited - www.silverstripe.com
-	All rights reserved.
+We're going to need to run a pretty specific query against the database to get all of the distinct month/year pairs, and this actually pushes the boundaries and practicality of the ORM. In rare cases such as this one, we can execute arbitrary SQL using `DB::query()`.
 
-	Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+*mysite/code/ArticleHolder.php*
+```php
+	public function ArchiveDates() {
+		$list = ArrayList::create();
+		$stage = Versioned::current_stage();		
 
-	    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-	    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the 
-	      documentation and/or other materials provided with the distribution.
-	    * Neither the name of SilverStripe nor the names of its contributors may be used to endorse or promote products derived from this software 
-	      without specific prior written permission.
+		$query = new SQLQuery(array ());
+		$query->selectField("DATE_FORMAT(`Date`,'%Y_%M_%m')","DateString")
+			  ->setFrom("ArticlePage_{$stage}")
+			  ->setOrderBy("Date", "ASC")
+			  ->setDistinct(true);
+		
+		$result = $query->execute();
+```
+To work outside the ORM, we can use the `SQLQuery` class to declaratively build a string of SQL. We pass an empty array to the constructor, because by default it will select `*`. We then just build the query using self-descriptive, chainable methods.
 
-	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
-	LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
-	GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
-	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
-	OF SUCH DAMAGE.
+The main advantage to this layer of abstraction is that it's platform agnostic, so that if someday you change database platforms, you don't need to update any syntax. All queries end up in `SQLQuery` eventually. `SiteTree::get()` is just a higher level of abstraction that builds an `SQLQuery` object. To build a really custom query, we're just going further down the food chain, so to speak.
+
+One major drawback of working outside the ORM is that we can no longer take versioning for granted. We have to be explicit about what table we want to select from. It is therefore imperative to check the current stage, and apply the necessary suffix to the table, e.g. *ArticlePage_Live*. Again, it's rare that you have to deal with stuff like this.
+
+Don't worry too much if this query is over your head. It's not often that we have to do things like this. What this query is doing is creating a SKU for each article that contains its year, month number, and month name, separated by underscores, like this:
+
+```
+2015_05_May
+```
+
+We then use the `setDistinct()` method to ensure we only get one of each.
+
+If you're wondering why we need the month name, as the year and month number are enough to satisfy the `DISTINCT` flag on their own, the answer is, we don't really need it, but it will help. We're getting the month name only for semantic purposes, to save time when we create the links on the template. The friendly month name is needed for the link text, but the month number is what we need for the URL.
+
+Now all we have to do is loop through that database result to create our final list of date objects.
+
+*mysite/code/ArticleHolder.php*
+```php
+		if($result) {
+			while($record = $result->nextRecord()) {
+				list($year, $monthName, $monthNumber) = explode('_', $record['DateString']);
+
+				$list->push(ArrayData::create(array(
+					'Year' => $year,
+					'MonthName' => $monthName,
+					'MonthNumber' => $monthNumber,
+					'Link' => $this->Link("date/$year/$monthNumber"),
+					'ArticleCount' => ArticlePage::get()->where("
+							DATE_FORMAT(`Date`,'%Y_%m') = '{$year}_{$monthNumber}'
+							AND ParentID = {$this->ID}
+						")->count()
+				)));
+			}
+		}
+```
+
+We loop through each record using the `nextRecord()` method. For each record, we explode the SKU into its component variables -- the year, the month number, and the month name -- and assign them to properties of an `ArrayData` object. We also create a link to the `date/$year/$monthNumber` route that we created in `ArticleHolder`. Lastly, we run a query against `ArticlePage` to get the number of articles that match this date SKU. Notice that in this case, we can safely just match the year and month number.
+
+Here's the complete `ArchiveDates()` function:
+
+*mysite/code/ArticleHolder.php*
+```php
+	public function ArchiveDates() {
+		$list = ArrayList::create();
+		$stage = Versioned::current_stage();
+
+		$query = new SQLQuery(array ());
+		$query->selectField("DATE_FORMAT(`Date`,'%Y_%M_%m')","DateString")
+			  ->setFrom("ArticlePage_{$stage}")
+			  ->setOrderBy("Date", "ASC")
+			  ->setDistinct(true);
+		
+		$result = $query->execute();
+		
+		if($result) {
+			while($record = $result->nextRecord()) {
+				list($year, $monthName, $monthNumber) = explode('_', $record['DateString']);
+
+				$list->push(ArrayData::create(array(
+					'Year' => $year,
+					'MonthName' => $monthName,
+					'MonthNumber' => $monthNumber,
+					'Link' => $this->Link("date/$year/$monthNumber"),
+					'ArticleCount' => ArticlePage::get()->where("
+							DATE_FORMAT(`Date`,'%Y%m') = '{$year}{$monthNumber}'
+							AND ParentID = {$this->ID}
+						")->count()
+				)));
+			}
+		}
+```
+
+Alright, get up, walk around. Have a (non-alcoholic) drink. Then refresh the page to see the fruits of your labour.
+
+### Applying the date filter in the controller
+
+The last thing we need to do to make the date archive work is set up that controller action to deal with the incoming `date/$year/$month` routes.
+
+*mysite/code/ArticleHolder.php*
+```php
+class ArticleHolder_Controller extends Page_Controller {
+	
+	//...
+
+	public function date(SS_HTTPRequest $r) {
+		$year = $r->param('ID');
+		$month = $r->param('OtherID');
+
+		if(!$year) return $this->httpError(404);
+
+		$startDate = $month ? "{$year}-{$month}-01" : "{$year}-01-01";
+		
+		if(strtotime($startDate) === false) {
+			return $this->httpError(404, 'Invalid date');
+		} 
+	}
+```
+
+We'll start by running a sanity check to ensure that we at least have a year in the URL. Then, we'll create a start date of either the first of the month or the first of the year. If for some reason the year or month values are invalid, and don't pass the `strtotime()` test, we throw an HTTP error.
+
+Now, we'll create the boundary for the end date, and run the query.
+
+*mysite/code/ArticleHolder.php*
+```php
+		$adder = $month ? '+1 month' : '+1 year';
+		$endDate = date('Y-m-d', strtotime(
+						$adder, 
+						strtotime($startDate)
+					));
+
+		$this->articleList = $this->articleList->filter(array(
+			'Date:GreaterThanOrEqual' => $startDate,
+			'Date:LessThan' => $endDate 
+		));
+
+		return array (
+			'StartDate' => DBField::create_field('SS_DateTime', $startDate),
+			'EndDate' => DBField::create_field('SS_DateTime', $endDate)
+		);
+```
+
+A really key detail of this function is that we return proper `DBField` objects to the template. If you'll remember from the early tutorials, controllers don't just return scalar values to the template. They're actually first-class, intelligent objects. By default, they're cast as `Text` objects, so we'll be more explicit and ensure that `StartDate` and `EndDate` are cast as dates. This will afford us the option to format them on the template.
+
+You can achieve the same result more declaratively using the `$casting` setting on in your controller. We'll discuss that in a future tutorial and clean this up a bit.
+
+For now, here is the complete `date()` controller action:
+
+*mysite/code/ArticleHolder.php*
+```php
+class ArticleHolder_Controller extends Page_Controller {
+	
+	//...
+
+	public function date(SS_HTTPRequest $r) {
+		$year = $r->param('ID');
+		$month = $r->param('OtherID');
+
+		if(!$year) return $this->httpError(404);
+
+		$startDate = $month ? "{$year}-{$month}-01" : "{$year}-01-01";
+		
+		if(strtotime($startDate) === false) {
+			return $this->httpError(404, 'Invalid date');
+		}
+
+		$adder = $month ? '+1 month' : '+1 year';
+		$endDate = date('Y-m-d', strtotime(
+						$adder, 
+						strtotime($startDate)
+					));
+
+		$this->articleList = $this->articleList->filter(array(
+			'Date:GreaterThanOrEqual' => $startDate,
+			'Date:LessThan' => $endDate 
+		));
+
+		return array (
+			'StartDate' => DBField::create_field('SS_DateTime', $startDate),
+			'EndDate' => DBField::create_field('SS_DateTime', $endDate)
+		);
+
+	}
+
+	//...
+```
+
+Refresh the browser and try clicking on some of the date archive links, and see that you're getting the expected results.
+
+The last thing we need to do is pull our filter headers into the listings to show the user the state of the list. Each controller action returns its own custom template variables that we can check.
+
+*themes/one-ring/templates/Layout/ArticleHolder.ss*
+```html
+	<div id="blog-listing" class="list-style clearfix">
+		<div class="row">
+			<% if $SelectedRegion %>
+				<h3>Region: $SelectedRegion.Title</h3>
+			<% else_if $SelectedCategory %>
+				<h3>Category: $SelectedCategory.Title</h3>
+			<% else_if $StartDate %>
+				<h3>Showing $StartDate.Full to $EndDate.Full</h3>
+			<% end_if %>
+
+```
+
+This is where having proper `SS_Datetime` objects comes in really handy, as we can format the date right on the template.
