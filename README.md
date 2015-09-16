@@ -1,4 +1,6 @@
 
+## Up and Running: Setting Up a Local Development Environment for SilverStripe
+
 ### Installing a local web server
 
 SilverStripe is a PHP-based application that connects to a database, so in order to run it, you'll need a webserver. You won't want to be doing all of your development on a remote environment, so setting up a local webserver is highly recommended. If you're running OSX or Linux, you probably have all the tools you need already installed on your system, but if you're just starting out, you might find it easier to get a pre-configured package that just gets everything going for you in a single click.
