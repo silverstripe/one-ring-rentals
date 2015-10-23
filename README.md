@@ -87,13 +87,13 @@ Only:
 ---
 Email:
   send_all_emails_to: 'me@example.com'
-```
 ---
 Except:
   environment: dev
 ---
 Email:
   bcc_all_emails_to: 'me@example.com'
+```
 
 This works okay, but it's kind of broad. If we have other developers on the project, they're not going to get any emails, and we also can't accurately test from our dev environment what the "to" address would actually be in production or test.
 
