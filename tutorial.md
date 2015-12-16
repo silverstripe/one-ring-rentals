@@ -1,257 +1,87 @@
-In the previous tutorial, we activated most of the sidebar filters for our Travel Guides section. We left out the date archive filter, however, because it introduced some complexity. Let's now dive into that complexity and get it working.
+## What we'll cover
+* Overview of depdendency management in SilverStripe
+* How Composer works in your project
+* Using Composer to upgrade SilverStripe
+* Using Composer to install a module
 
-### Adding date filter links to the template
+## Overview of dependency management works in SilverStripe
 
-Looking at the template, we first have to generate a list of all the distinct month/year combinations for all the articles. Let's start by working backwards, and we want the end result to be on the template.
+If you refer back to our first lesson on installing SilverStripe in your development environment, you'll recall that we did this using Composer. Composer is a package manager for PHP, and it makes our lives a whole lot easier by providing version constraints, allowing for peer dependencies, and never allowing our project to exist in a state where two packages conflict with each other. The primary place you will find packages for Composer is on [packagist.org](http://packagist.org), a directory where package authors submit links to their code repositories for others to install easily. Many packages are set up to auto-update from their repositories, ensuring that the directory is always up to date with the latest releases.
 
-*themes/one-ring/templates/Layout/ArticleHolder.ss*
-```html
-  <!-- BEGIN ARCHIVES ACCORDION -->
-	<h2 class="section-title">Archives</h2>
-	<div id="accordion" class="panel-group blog-accordion">
-		<div class="panel">
-		<!--
-			<div class="panel-heading">
-				<div class="panel-title">
-					<a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" class="">
-						<i class="fa fa-chevron-right"></i> 2014 (15)
-					</a>
-				</div>
-			</div>
-		-->
-			<div id="collapseOne" class="panel-collapse collapse in">
-				<div class="panel-body">
-					<ul>
-					<% loop $ArchiveDates %>
-						<li><a href="$Link">$MonthName $Year ($ArticleCount)</a></li>
-					<% end_loop %>
-					</ul>
-				</div>
-			</div>
-		</div>	
-	</div>
-	<!-- END  ARCHIVES ACCORDION -->
+## How Composer works in your project
 
-```
-First off, these dates were grouped by year. We've commented that out for now. We can address that in a future tutorial on grouped lists. In the loop, each date entry has a `$Link` method that will go to the filtered article list, `$MonthName` and `$Year` properties, and an `$ArticleCount` property.
+There are two main ingredients to a project managed by Composer, and they both sit at the root of your project: `composer.json` and `composer.lock`. It is very easy to confuse these two files, or treat them similarly, but understanding the difference is critical.
 
-This is all well and good, but what are these objects?
+`composer.json` is the file that declares the packages required for your project to run, and the range of versions that are acceptable. This second piece is really important. Many `composer.json` files do not specify an exact release or commit. They provide boundaries, for instance, "no lower than 2.0, and no higher than 2.1". This allows for opt-in upgrades with a single command.
 
-In the previous tutorial, we dicussed dealing with arbitrary template data, and this is a perfect use case. These date archive objects need to be iterable in a loop, and they need dynamic properties. We'll need to define them as simple `ArrayData` objects.
+`composer.lock` is the file that specifies exactly what commits of each package the project is using. When your project is deployed, or when another user installs your project, this file is used to pull down the exact versions of the dependencies that are currently running on the project.
 
-Let's build that list in the model of our `ArticleHolder` page type.
+An easier way to think of the separation is that `composer.json` is used by `composer update` and `composer.lock` is used by `composer install`.
 
-*mysite/code/ArticleHolder.php*
-```php
-class ArticleHolder extends Page {
-	//...
+When you run `composer update`, Composer will check your `composer.json` and see if it can find any newer versions of each package that are allowed within the constraints you've provided. For example:
 
-	public function ArchiveDates() {
-		$list = ArrayList::create();
+* You've specified "no lower than 2.0, and no higher than 2.1" for Package-A.
+* Your `composer.lock` file says you're currently on *2.0.1*
+* Composer finds that a there is a *2.0.2* and a *2.0.3* release of this Package-A.
+* Composer will install *2.0.3*, and update your `composer.lock` file accordingly.
 
-		return $list;
-	}
-```
-### Running a custom SQL query
+On the other hand, when you run `composer install`, Composer will simply read your `composer.lock` file and download the exact commits specified there. If a new version of Package-A is available, it won't know or care. It is therefore critical to:
 
+* Always run `composer install` and not `composer update` when setting up or deploying a project.
+* Make sure `composer.lock` is in source control. (Ideally `composer.json` as well)
+* Consider running `composer update` a *breaking change*, requiring a new commit (a changed `composer.lock` file), ideally on separate branch, requiring testing before deployment.
 
-We're going to need to run a pretty specific query against the database to get all of the distinct month/year pairs, and this actually pushes the boundaries and practicality of the ORM. In rare cases such as this one, we can execute arbitrary SQL using `DB::query()`.
+## Using Composer to upgrade SilverStripe
 
-*mysite/code/ArticleHolder.php*
-```php
-	public function ArchiveDates() {
-		$list = ArrayList::create();
-		$stage = Versioned::current_stage();		
+Let's have a look at the composer.json file in our project. We can see that we have minimal dependencies. We're currently running version *3.1.8* of SilverStripe. This is actually pretty far behind. In fact, a new minor release has come out since we started this project, so let's get up to speed on version *3.2*. As of this writing, the latest release is *3.2.1*.
 
-		$query = new SQLQuery(array ());
-		$query->selectField("DATE_FORMAT(`Date`,'%Y_%M_%m')","DateString")
-			  ->setFrom("ArticlePage_{$stage}")
-			  ->setOrderBy("Date", "ASC")
-			  ->setDistinct(true);
-```
-To work outside the ORM, we can use the `SQLQuery` class to declaratively build a string of SQL. We pass an empty array to the constructor, because by default it will select `*`. We then just build the query using self-descriptive, chainable methods.
+One option would be to simply change both of these *3.1.8* constraints to *3.2.1*. This could work, but it's playing it pretty safe. SilverStripe is using semantic versioning, which will help us make a decision on what exactly we should specify here.
 
-The main advantage to this layer of abstraction is that it's platform agnostic, so that if someday you change database platforms, you don't need to update any syntax. All queries end up in `SQLQuery` eventually. `SiteTree::get()` is just a higher level of abstraction that builds an `SQLQuery` object. To build a really custom query, we're just going further down the food chain, so to speak.
+The idea of semantic versioning is simple. Release names are broken up into three parts, separated by dots. When the number all the way on the right changes, it means the changes include only bug fixes or security patches. When the number in the middle changes, it means new features have been added in that release. When the number all the way on the left changes, it means there are API changes, and backward compatability is not guaranteed. You can learn more about semantic versioning at [semver.org](http://semver.org).
 
-One major drawback of working outside the ORM is that we can no longer take versioning for granted. We have to be explicit about what table we want to select from. It is therefore imperative to check the current stage, and apply the necessary suffix to the table, e.g. *ArticlePage_Live*. Again, it's rare that you have to deal with stuff like this.
+Therefore, we can safely assume that anything beginning with *3.2* will not break our project, so let's use a the `~` syntax to specify that.
 
-Don't worry too much if this query is over your head. It's not often that we have to do things like this. What this query is doing is creating a SKU for each article that contains its year, month number, and month name, separated by underscores, like this:
-
-```
-2015_05_May
+```js
+"require": {
+	"php": ">=5.3.2",
+	"silverstripe/cms": "~3.2.0",
+	"silverstripe/framework": "~3.2.0",
+	"silverstripe-themes/simple": "*"
+}
 ```
 
-We then use the `setDistinct()` method to ensure we only get one of each.
+For more information on the version constraint syntax, visit the [composer documentation](http://getcomposer.org).
 
-If you're wondering why we need the month name, as the year and month number are enough to satisfy the `DISTINCT` flag on their own, the answer is, we don't really need it, but it will help. We're getting the month name only for semantic purposes, to save time when we create the links on the template. The friendly month name is needed for the link text, but the month number is what we need for the URL.
+Because we made changes to the `composer.json` file, we'll need to run `composer update` to get our new stuff. Let's do that now. (It takes a while! Be patient.)
 
-Now all we have to do is loop through that database result to create our final list of date objects.
+We've upgraded our version of silverstripe, so it's important to run `dev/build?flush` at this point. We see that everything is still working well. There are no major API changes going from 3.1 to 3.2, so we can say with a high level of confidence that all of our code will work exactly the same way as before.
 
-*mysite/code/ArticleHolder.php*
-```php
-		if($result) {
-			while($record = $result->nextRecord()) {
-				list($year, $monthName, $monthNumber) = explode('_', $record['DateString']);
+## Using Composer to install a module
 
-				$list->push(ArrayData::create(array(
-					'Year' => $year,
-					'MonthName' => $monthName,
-					'MonthNumber' => $monthNumber,
-					'Link' => $this->Link("date/$year/$monthNumber"),
-					'ArticleCount' => ArticlePage::get()->where("
-							DATE_FORMAT(`Date`,'%Y_%m') = '{$year}_{$monthNumber}'
-							AND ParentID = {$this->ID}
-						")->count()
-				)));
-			}
-		}
-```
+We'd like to put a blog on our website. Fortunately, there's already a great module authored and maintained by the SilverStripe core team that provides blogging functionality. Let's see if we can find it.
 
-We loop through each record using the `nextRecord()` method. For each record, we explode the SKU into its component variables -- the year, the month number, and the month name -- and assign them to properties of an `ArrayData` object. We also create a link to the `date/$year/$monthNumber` route that we created in `ArticleHolder`. Lastly, we run a query against `ArticlePage` to get the number of articles that match this date SKU. Notice that in this case, we can safely just match the year and month number.
+A simple search on Packagist, Github, or even just Google for "silverstripe blog" should turn up everything you need, but the recommended way to find and discover new modules is on [addons.silverstripe.org](http://addons.silverstripe.org). Here, you can see all the latest and popular modules along with instructions on how to install them.
 
-Here's the complete `ArchiveDates()` function:
-
-*mysite/code/ArticleHolder.php*
-```php
-	public function ArchiveDates() {
-		$list = ArrayList::create();
-		$stage = Versioned::current_stage();
-
-		$query = new SQLQuery(array ());
-		$query->selectField("DATE_FORMAT(`Date`,'%Y_%M_%m')","DateString")
-			  ->setFrom("ArticlePage_{$stage}")
-			  ->setOrderBy("Date", "ASC")
-			  ->setDistinct(true);
-
-		if($result) {
-			while($record = $result->nextRecord()) {
-				list($year, $monthName, $monthNumber) = explode('_', $record['DateString']);
-
-				$list->push(ArrayData::create(array(
-					'Year' => $year,
-					'MonthName' => $monthName,
-					'MonthNumber' => $monthNumber,
-					'Link' => $this->Link("date/$year/$monthNumber"),
-					'ArticleCount' => ArticlePage::get()->where("
-							DATE_FORMAT(`Date`,'%Y%m') = '{$year}{$monthNumber}'
-							AND ParentID = {$this->ID}
-						")->count()
-				)));
-			}
-		}
-```
-
-
-Alright, get up, walk around. Have a (non-alcoholic) drink. Then refresh the page to see the fruits of your labour.
-
-### Applying the date filter in the controller
-
-The last thing we need to do to make the date archive work is set up that controller action to deal with the incoming `date/$year/$month` routes.
-
-*mysite/code/ArticleHolder.php*
-```php
-class ArticleHolder_Controller extends Page_Controller {
-	
-	//...
-
-	public function date(SS_HTTPRequest $r) {
-		$year = $r->param('ID');
-		$month = $r->param('OtherID');
-
-		if(!$year) return $this->httpError(404);
-
-		$startDate = $month ? "{$year}-{$month}-01" : "{$year}-01-01";
-		
-		if(strtotime($startDate) === false) {
-			return $this->httpError(404, 'Invalid date');
-		} 
-	}
-```
-
-We'll start by running a sanity check to ensure that we at least have a year in the URL. Then, we'll create a start date of either the first of the month or the first of the year. If for some reason the year or month values are invalid, and don't pass the `strtotime()` test, we throw an HTTP error.
-
-Now, we'll create the boundary for the end date, and run the query.
-
-*mysite/code/ArticleHolder.php*
-```php
-		$adder = $month ? '+1 month' : '+1 year';
-		$endDate = date('Y-m-d', strtotime(
-						$adder, 
-						strtotime($startDate)
-					));
-
-		$this->articleList = $this->articleList->filter(array(
-			'Date:GreaterThanOrEqual' => $startDate,
-			'Date:LessThan' => $endDate 
-		));
-
-		return array (
-			'StartDate' => DBField::create_field('SS_DateTime', $startDate),
-			'EndDate' => DBField::create_field('SS_DateTime', $endDate)
-		);
-```
-
-A really key detail of this function is that we return proper `DBField` objects to the template. If you'll remember from the early tutorials, controllers don't just return scalar values to the template. They're actually first-class, intelligent objects. By default, they're cast as `Text` objects, so we'll be more explicit and ensure that `StartDate` and `EndDate` are cast as dates. This will afford us the option to format them on the template.
-
-You can achieve the same result more declaratively using the `$casting` setting on in your controller. We'll discuss that in a future tutorial and clean this up a bit.
-
-For now, here is the complete `date()` controller action:
-
-*mysite/code/ArticleHolder.php*
-```php
-class ArticleHolder_Controller extends Page_Controller {
-	
-	//...
-
-	public function date(SS_HTTPRequest $r) {
-		$year = $r->param('ID');
-		$month = $r->param('OtherID');
-
-		if(!$year) return $this->httpError(404);
-
-		$startDate = $month ? "{$year}-{$month}-01" : "{$year}-01-01";
-		
-		if(strtotime($startDate) === false) {
-			return $this->httpError(404, 'Invalid date');
-		}
-
-		$adder = $month ? '+1 month' : '+1 year';
-		$endDate = date('Y-m-d', strtotime(
-						$adder, 
-						strtotime($startDate)
-					));
-
-		$this->articleList = $this->articleList->filter(array(
-			'Date:GreaterThanOrEqual' => $startDate,
-			'Date:LessThan' => $endDate 
-		));
-
-		return array (
-			'StartDate' => DBField::create_field('SS_DateTime', $startDate),
-			'EndDate' => DBField::create_field('SS_DateTime', $endDate)
-		);
-
-	}
-
-	//...
-```
-
-Refresh the browser and try clicking on some of the date archive links, and see that you're getting the expected results.
-
-The last thing we need to do is pull our filter headers into the listings to show the user the state of the list. Each controller action returns its own custom template variables that we can check.
-
-*themes/one-ring/templates/Layout/ArticleHolder.ss*
-```html
-	<div id="blog-listing" class="list-style clearfix">
-		<div class="row">
-			<% if $SelectedRegion %>
-				<h3>Region: $SelectedRegion.Title</h3>
-			<% else_if $SelectedCategory %>
-				<h3>Category: $SelectedCategory.Title</h3>
-			<% else_if $StartDate %>
-				<h3>Showing $StartDate.Full to $EndDate.Full</h3>
-			<% end_if %>
+Searching for "blog" on the addons site gives us a result for `silverstripe/blog`. Let's take a look at that. In the instructions, we get a one-line command we can use to install the module. Before we just copy and paste this into the terminal, however, we're going to make a slight change. This command declares the version as "dev-master", which isn't a great idea. We'll basically be locked on to whatever is on the master branch, which is often experimental and untested. A much safer bet here is to choose the latest release. If we don't specify a version, that's what we'll get.
 
 ```
+composer require silverstripe/blog
+```
 
-This is where having proper `SS_Datetime` objects comes in really handy, as we can format the date right on the template.
+Notice how we don't get the exact version *2.3.0*. The caret (^) before the version number tells composer to allow the latest stable release of version *2.x*, so when *2.4* comes out, a composer update will fetch that.
+
+The blog module has downloaded, and we'll need to run `dev/build` again. We should see a lot of green as all the new tables get built.
+
+We'll want to make sure that this new directory does not get checked into our repository, so it's important to add it to our `.gitignore` file before we make any new commits.
+
+*.gitignore*
+```
+...
+...
+blog/
+```
+
+Let's go into the CMS to create our first blog. Notice that the CMS UI has been slightly updated in version 3.2. There are many other important updates happening under the hood, as well. If we click on "Add new" we can create a new blog. We'll just create an example post to populate it.
+
+Taking a look at it on the frontend, we can see it's a bit of a mess. That's because the module ships with its own set of templates, which don't necessarily get along with the templates we're already using. As we covered in earlier tutorials, we can simply override these templates by placing templates of the same name in our theme directory. In the `static/` directory that comes with this lesson, you'll find two new templates. Just copy them into `templates/Layout` in your theme directory, and run `?flush`. The template should look a bit better now.
+
