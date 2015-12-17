@@ -10,3 +10,8 @@ silverstripe-cache
 vendor/
 framework/
 cms/
+blog/
+lumberjack/
+reports/
+siteconfig/
+tagfield/

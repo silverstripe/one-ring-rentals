@@ -3,9 +3,10 @@
 	"description": "The SilverStripe Framework Installer",
 	"require": {
 		"php": ">=5.3.2",
-		"silverstripe/cms": "3.1.*@stable",
-		"silverstripe/framework": "3.1.*@stable",
-		"silverstripe-themes/simple": "*"
+		"silverstripe/cms": "~3.2.0",
+		"silverstripe/framework": "~3.2.0",
+		"silverstripe-themes/simple": "*",
+		"silverstripe/blog": "^2.3"
 	},
 	"config": {
 		"process-timeout": 600	
