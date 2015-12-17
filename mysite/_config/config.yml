@@ -12,6 +12,15 @@ SSViewer:
 SiteConfig:
   extensions:
     - SiteConfigExtension
+Blog:
+  extensions:
+    - BlogExtension
+BlogPost:
+  extensions:
+    - BlogPostExtension
+BlogCategory:
+  extensions:
+    - BlogCategoryExtension
 ---
 Only:
   environment: dev
