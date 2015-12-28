@@ -1,51 +1,51 @@
-## Overview
+## Lesson 1: Creating Your First Theme
 
-Base project folder for a SilverStripe ([http://silverstripe.org](http://silverstripe.org)) installation. Requires additional modules to function:
+In this tutorial, we’ll cover how to build your first theme in SilverStripe. The SilverStripe installer ships with its own default theme -- Simple, but more than likely, you’ll want to override this to use your own custom design.
 
- * [`framework`](http://github.com/silverstripe/silverstripe-framework): Module including the base framework
- * [`cms`](http://github.com/silverstripe/silverstripe-cms): Module including a Content Management System
- * `themes/simple` (optional)
+### What is a theme?
 
-## Installation ##
+In a conventional SilverStripe project, the code and business logic (backend) of a website is kept separate from the UI and design elements (frontend). More specifically, PHP classes and configuration files are kept in the **project directory**, while templates, CSS, images, and Javascript are kept in the **theme directory**.
 
-See [installation on different platforms](http://doc.silverstripe.org/framework/en/installation/),
-and [installation from source](http://doc.silverstripe.org/framework/en/installation/from-source).
+In a default installation of SilverStripe, your project directory is called **mysite/**, and lives in the web root. Your theme directory, however, will be located one level deeper, under the **themes/** folder. Because the code layer is detached from the UI, a given project can have multiple themes.
 
-## Bugtracker ##
+### Building the theme structure
 
-Bugs are tracked on github.com ([framework issues](https://github.com/silverstripe/silverstripe-framework/issues),
-[cms issues](https://github.com/silverstripe/silverstripe-cms/issues)). 
-Please read our [issue reporting guidelines](http://doc.silverstripe.org/framework/en/misc/contributing/issues).
+Let’s create our first theme by creating a new folder under **themes/**. The folder name is arbitrary, but must be comprised of only alphanumeric characters, dashes, or underscores. In this lesson, we’ll call the folder **one-ring/**, which refers to the name of our website, but feel free to choose any name you like. Remember the name you choose, as we’ll need to refer to it later.
 
-## Development and Contribution ##
+Underneath your new theme folder, you’ll need to create some new folders, so that your theme has the following structure:
 
-If you would like to make changes to the SilverStripe core codebase, we have an extensive [guide to contributing code](http://doc.silverstripe.org/framework/en/misc/contributing/code).
+*   themes
+  *   one-ring
+  *   css
+  *   images
+  *   javascript
+  *   templates
+      *   Includes
+      *   Layout
 
-## Links ##
+Most of these folders are self-descriptive, but note that the only folders with compulsory names are **templates** and **css**. The **images** and **javascript** folders can be named anything you like. In fact, they can even remain absent if you don’t have anything to put there. Further, feel free to add any other folders you like, and subfolders thereof (i.e. a **less/** or **scss/** folder).
 
- * [Changelogs](http://doc.silverstripe.org/framework/en/changelogs/)
- * [Bugtracker: Framework](https://github.com/silverstripe/silverstripe-framework/issues)
- * [Bugtracker: CMS](https://github.com/silverstripe/silverstripe-cms/issues)
- * [Bugtracker: Installer](https://github.com/silverstripe/silverstripe-installer/issues)
- * [Forums](http://silverstripe.org/forums)
- * [Developer Mailinglist](https://groups.google.com/forum/#!forum/silverstripe-dev)
+Next we’ll create the most fundamental component of a theme -- a template. In SilverStripe, templates are not HTML documents, but rather PHP code that is compiled from SilverStripe’s own template syntax behind the scenes. In alignment with that key that distinction, it is imperative that template files use the **.ss** extension.
 
-## License ##
+In your **templates/** directory, create a file called **Page.ss**. Inside that file, create a basic HTML document.
 
-	Copyright (c) 2007-2013, SilverStripe Limited - www.silverstripe.com
-	All rights reserved.
+```html
+<html>
+  <body>
+    <h1>Hello, world</h1>
+  </body>
+</html>
+```
 
-	Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Why **Page.ss**? A default installation of SilverStripe ships with a page type called **Page**. Typically, this page type is used to display the most basic form of content for a project. A common use case is for the “About Us” page, or even something more plain, like “Terms and Conditions.”
 
-	    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-	    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the 
-	      documentation and/or other materials provided with the distribution.
-	    * Neither the name of SilverStripe nor the names of its contributors may be used to endorse or promote products derived from this software 
-	      without specific prior written permission.
+### Activating the theme
 
-	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-	IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
-	LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE 
-	GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
-	STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
-	OF SUCH DAMAGE.
+To activate the theme, we’ll have to dig into the project directory. Open the file **config.yml** in the **mysite/_config** directory. Under the heading **SSViewer**, take note of the setting for **theme**, and change it to your theme name. In this case, we named our theme **one-ring**, so our new configuration file will look like this:
+
+```yaml
+SSViewer:  theme: 'one-ring'
+```
+These files are written in YAML, which is a markup language, similar to JSON or XML, that is very [well-documented](https://github.com/Animosity/CraftIRC/wiki/Complete-idiot%27s-introduction-to-yaml). Configuration is a very rich topic in SilverStripe that we’ll cover in later tutorials, but for now, the only important bit you need to know is that any changes you make to these files have to be cleared from cache. To clear the cache, simply access any page on your site and append ?flush to the URL, e.g. **http://localhost:8888/tutorial/?flush**
+
+Once the page is loaded, you should see your “Hello, world” page template. At this time, you can feel free to delete the “simple” theme from your themes directory, as we have now branched out on our own.
