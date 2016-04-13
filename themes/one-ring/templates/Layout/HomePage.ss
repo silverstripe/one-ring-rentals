@@ -125,7 +125,7 @@
 									$PrimaryPhoto.CroppedImage(220,194)
 								</div>
 								<div class="price">
-									<span>$PricePerNight.Nice</span><p>per night<p>
+									<span>$PricePerNight.Nice</span><p>per night</p>
 								</div>
 								<ul class="amenities">
 									<li><i class="icon-bedrooms"></i> $Bedrooms</li>
@@ -284,7 +284,7 @@
 								<li class="col-lg-12">
 									<a href="#"><img src="http://placehold.it/70x70" alt="" /></a>
 									<div class="info">										
-										<h5>Sam Minnée reviewed <a href="#">The House With No Windows</a></h4>
+										<h5>Sam Minnée reviewed <a href="#">The House With No Windows</a></h5>
 										<p>Awesome solitary confinement, mate. Spot on. Sweet as.</p>
 										<h6>Just now</h6>
 									</div>
@@ -292,7 +292,7 @@
 								<li class="col-lg-12">
 									<a href="#"><img src="http://placehold.it/70x70" alt="" /></a>
 									<div class="info">
-										<h5>Ingo Schoomer asked a question about <a href="#">The Mistake by the Lake</a></h4>
+										<h5>Ingo Schoomer asked a question about <a href="#">The Mistake by the Lake</a></h5>
 										<p>Has this house been unit tested?</p>
 										<h6>37 minutes ago</h6>
 									</div>
