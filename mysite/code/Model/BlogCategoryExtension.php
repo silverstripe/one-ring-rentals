@@ -1,5 +1,9 @@
 <?php
 
+use SilverStripe\ORM\DataList;
+use SilverStripe\Control\Controller;
+use SilverStripe\ORM\DataExtension;
+
 class BlogCategoryExtension extends DataExtension
 {
     /**
@@ -7,7 +11,8 @@ class BlogCategoryExtension extends DataExtension
      *
      * @return DataList
      */
-    public function updateGetBlogPosts(DataList &$posts) {
+    public function updateGetBlogPosts(DataList &$posts)
+    {
         $controller = Controller::curr();
 
         if ($controller) {

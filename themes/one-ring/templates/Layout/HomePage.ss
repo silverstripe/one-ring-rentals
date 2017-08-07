@@ -116,13 +116,14 @@
 
 						<div class="grid-style1 clearfix">
 							<% loop $FeaturedProperties %>
+
 							<div class="item col-md-4">
 								<div class="image">
 									<a href="$Link">
 										<h3>$Title</h3>
 										<span class="location">$Region.Title</span>
 									</a>
-									$PrimaryPhoto.CroppedImage(220,194)
+									$PrimaryPhoto.Fill(220,194)
 								</div>
 								<div class="price">
 									<span>$PricePerNight.Nice</span><p>per night</p>
@@ -184,10 +185,7 @@
 							</div>
 						</div>
 						
-						
 
-						
-						
 						<h1 class="section-title">Recent Articles</h1>
 						<div class="grid-style1">
 							<% loop $LatestArticles(3) %>
@@ -196,7 +194,7 @@
 									<a href="$Link">
 										<span class="btn btn-default"><i class="fa fa-file-o"></i> Read More</span>
 									</a>
-									$Photo.CroppedImage(220,148)
+									$Photo.Fill(220,148)
 								</div>
 								<div class="tag"><i class="fa fa-file-text"></i></div>
 								<div class="info-blog">

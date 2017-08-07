@@ -35,7 +35,7 @@
 								<a href="$Link">
 									<span class="btn btn-default"><i class="fa fa-file-o"></i> Details</span>
 								</a>
-								$PrimaryPhoto.CroppedImage(760,670)
+								$PrimaryPhoto.Fill(760,670)
 							</div>
 							<div class="price">
 								<span>$PricePerNight.Nice</span><p>per night<p>

@@ -1,40 +1,17 @@
----
-Name: mysite
-After:
-  - 'framework/*'
-  - 'cms/*'
----
-# YAML configuration for SilverStripe
-# See http://doc.silverstripe.org/framework/en/topics/configuration
-# Caution: Indentation through two spaces, not tabs
-SSViewer:
-  theme: 'one-ring'
-SiteConfig:
+SilverStripe\View\SSViewer:
+  theme: one-ring
+SilverStripe\SiteConfig\SiteConfig:
   extensions:
     - SiteConfigExtension
-Blog:
-  extensions:
-    - BlogExtension
-BlogPost:
-  extensions:
-    - BlogPostExtension
-BlogCategory:
-  extensions:
-    - BlogCategoryExtension
 ---
 Only:
   environment: dev
 ---
-Email:
-  send_all_emails_to: 'me@example.com'
+SilverStripe\Control\Email\Email:
+  send_all_emails_to: me@example.com
 ---
 Except:
   environment: dev
 ---
-Email:
-  bcc_all_emails_to: 'me@example.com'
-
-
-
-
-
+SilverStripe\Control\Email\Email:
+  bcc_all_emails_to: me@example.com

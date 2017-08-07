@@ -16,7 +16,7 @@
 									<a href="$Link">
 										<span class="btn btn-default"><i class="fa fa-file-o"></i> Read More</span>
 									</a>
-									$Photo.CroppedImage(720,255)
+									$Photo.Fill(720,255)
 								</div>
 								<div class="info-blog">
 									<h3>

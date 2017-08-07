@@ -1,5 +1,8 @@
 <?php
 
+use SilverStripe\i18n\i18n;
+use SilverStripe\Control\Director;
+
 global $project;
 $project = 'mysite';
 
