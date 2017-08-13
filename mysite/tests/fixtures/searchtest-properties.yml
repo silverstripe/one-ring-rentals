@@ -1,0 +1,115 @@
+PropertySearchPage:
+  search:
+    URLSegment: find-a-rental
+    Title: Find a rental
+
+Region:
+  mordor:
+    Title: Mordor
+  rohan:
+    Title: Rohan
+  gondor:
+    Title: Gondor
+  beleriand:
+    Title: Beleriand
+  ruhn:
+    Title: Rhûn
+  dead-marshes:
+    Title: Dead Marshes
+  mirkwood:
+    Title: Mirkwood
+  eriador:
+    Title: Eriador
+  shire:
+    Title: The Shire
+
+Property:
+  property1:
+    Title: My Special Property one
+    PricePerNight: 100
+    Bedrooms: 1
+    Bathrooms: 1
+    AvailableStart: 2017-08-01
+    AvailableEnd: 2017-08-31
+    Region: =>Region.mordor
+
+  property2:
+    Title: My Special Property two
+    PricePerNight: 200
+    Bedrooms: 2
+    Bathrooms: 2
+    AvailableStart: 2017-08-05
+    AvailableEnd: 2017-08-31
+    Region: =>Region.rohan
+
+  property3:
+    Title: My Special Property three
+    PricePerNight: 300
+    Bedrooms: 3
+    Bathrooms: 3
+    AvailableStart: 2017-08-10
+    AvailableEnd: 2017-08-31
+    Region: =>Region.gondor
+
+  property4:
+    Title: My Special Property four
+    PricePerNight: 400
+    Bedrooms: 4
+    Bathrooms: 4
+    AvailableStart: 2017-08-15
+    AvailableEnd: 2017-08-31
+    Region: =>Region.beleriand
+
+  property5:
+    Title: My Special Property five
+    PricePerNight: 500
+    Bedrooms: 5
+    Bathrooms: 5
+    AvailableStart: 2017-08-20
+    AvailableEnd: 2017-08-31
+    Region: =>Region.eriador
+
+  property6:
+    Title: My Special Property six
+    PricePerNight: 600
+    Bedrooms: 6
+    Bathrooms: 6
+    AvailableStart: 2017-08-25
+    AvailableEnd: 2017-08-31
+    Region: =>Region.ruhn
+
+  property7:
+    Title: My Special Property seven
+    PricePerNight: 700
+    Bedrooms: 7
+    Bathrooms: 7
+    AvailableStart: 2017-08-30
+    AvailableEnd: 2017-08-31
+    Region: =>Region.dead-marshes
+
+  property8:
+    Title: My Special Property eight
+    PricePerNight: 800
+    Bedrooms: 8
+    Bathrooms: 8
+    AvailableStart: 2017-09-01
+    AvailableEnd: 2017-08-31
+    Region: =>Region.mirkwood
+
+  property9:
+    Title: My Special Property nine
+    PricePerNight: 900
+    Bedrooms: 9
+    Bathrooms: 9
+    AvailableStart: 2017-09-05
+    AvailableEnd: 2017-09-30
+    Region: =>Region.eriador
+
+  property10:
+    Title: My Special Property ten
+    PricePerNight: 1000
+    Bedrooms: 10
+    Bathrooms: 10
+    AvailableStart: 2017-09-10
+    AvailableEnd: 2017-09-30
+    Region: =>Region.shire

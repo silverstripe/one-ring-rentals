@@ -11,58 +11,26 @@ use SilverStripe\Forms\Form;
 
 class PropertySearchPageController extends PageController
 {
+    const NUM_PROPERTIES_PER_PAGE = 15;
 
+    /**
+     * Constants representing GET parameters used to filter queries in the class.
+     */
+    const GET_FILTER_KEYWORDS = 'Keywords';
+    const GET_FILTER_ARRIVAL_DATE = 'ArrivalDate';
+    const GET_FILTER_NIGHTS = 'Nights';
+    const GET_FILTER_BEDROOMS = 'Bedrooms';
+    const GET_FILTER_BATHROOMS = 'Bathrooms';
+    const GET_FILTER_MIN_PRICE = 'MinPrice';
+    const GET_FILTER_MAX_PRICE = 'MaxPrice';
+
+    /**
+     * @param HTTPRequest $request
+     * @return array | string
+     */
     public function index(HTTPRequest $request)
     {
-        $properties = Property::get();
-
-        if ($search = $request->getVar('Keywords')) {
-            $properties = $properties->filter(array(
-                'Title:PartialMatch' => $search
-            ));
-        }
-
-        if ($arrival = $request->getVar('ArrivalDate')) {
-            $arrivalStamp = strtotime($arrival);
-            $nightAdder = '+' . $request->getVar('Nights') . ' days';
-            $startDate = date('Y-m-d', $arrivalStamp);
-            $endDate = date('Y-m-d', strtotime($nightAdder, $arrivalStamp));
-
-            $properties = $properties->filter(array(
-                'AvailableStart:LessThanOrEqual' => $startDate,
-                'AvailableEnd:GreaterThanOrEqual' => $endDate
-            ));
-        }
-
-        if ($bedrooms = $request->getVar('Bedrooms')) {
-            $properties = $properties->filter(array(
-                'Bedrooms:GreaterThanOrEqual' => $bedrooms
-            ));
-        }
-
-        if ($bathrooms = $request->getVar('Bathrooms')) {
-            $properties = $properties->filter(array(
-                'Bathrooms:GreaterThanOrEqual' => $bathrooms
-            ));
-        }
-
-        if ($minPrice = $request->getVar('MinPrice')) {
-            $properties = $properties->filter(array(
-                'PricePerNight:GreaterThanOrEqual' => $minPrice
-            ));
-        }
-
-        if ($maxPrice = $request->getVar('MaxPrice')) {
-            $properties = $properties->filter(array(
-                'PricePerNight:LessThanOrEqual' => $maxPrice
-            ));
-        }
-
-        $paginatedProperties = PaginatedList::create(
-            $properties,
-            $request
-        )->setPageLength(15)
-            ->setPaginationGetVar('s');
+        $paginatedProperties = $this->filterQuery($request);
 
         $data = array(
             'Results' => $paginatedProperties
@@ -76,7 +44,9 @@ class PropertySearchPageController extends PageController
         return $data;
     }
 
-
+    /**
+     * @return Form
+     */
     public function PropertySearchForm()
     {
         $nights = array();
@@ -93,27 +63,27 @@ class PropertySearchPageController extends PageController
             $this,
             'PropertySearchForm',
             FieldList::create(
-                TextField::create('Keywords')
+                TextField::create(self::GET_FILTER_KEYWORDS)
                     ->setAttribute('placeholder', 'City, State, Country, etc...')
                     ->addExtraClass('form-control'),
-                TextField::create('ArrivalDate', 'Arrive on...')
+                TextField::create(self::GET_FILTER_ARRIVAL_DATE, 'Arrive on...')
                     ->setAttribute('data-datepicker', true)
                     ->setAttribute('data-date-format', 'DD-MM-YYYY')
                     ->addExtraClass('form-control'),
-                DropdownField::create('Nights', 'Stay for...')
+                DropdownField::create(self::GET_FILTER_NIGHTS, 'Stay for...')
                     ->setSource($nights)
                     ->addExtraClass('form-control'),
-                DropdownField::create('Bedrooms')
+                DropdownField::create(self::GET_FILTER_BEDROOMS)
                     ->setSource(ArrayLib::valuekey(range(1, 5)))
                     ->addExtraClass('form-control'),
-                DropdownField::create('Bathrooms')
+                DropdownField::create(self::GET_FILTER_BATHROOMS)
                     ->setSource(ArrayLib::valuekey(range(1, 5)))
                     ->addExtraClass('form-control'),
-                DropdownField::create('MinPrice', 'Min. price')
+                DropdownField::create(self::GET_FILTER_MIN_PRICE, 'Min. price')
                     ->setEmptyString('-- any --')
                     ->setSource($prices)
                     ->addExtraClass('form-control'),
-                DropdownField::create('MaxPrice', 'Max. price')
+                DropdownField::create(self::GET_FILTER_MAX_PRICE, 'Max. price')
                     ->setEmptyString('-- any --')
                     ->setSource($prices)
                     ->addExtraClass('form-control')
@@ -130,5 +100,63 @@ class PropertySearchPageController extends PageController
             ->loadDataFrom($this->request->getVars());
 
         return $form;
+    }
+
+    /**
+     * @param HTTPRequest $request
+     * @return PaginatedList
+     */
+    protected function filterQuery(HTTPRequest $request)
+    {
+        $properties = Property::get();
+        if ($search = $request->requestVar(self::GET_FILTER_KEYWORDS)) {
+            $properties = $properties->filter(array(
+                'Title:PartialMatch' => $search
+            ));
+        }
+
+        if ($arrival = $request->requestVar(self::GET_FILTER_ARRIVAL_DATE)) {
+            $arrivalStamp = strtotime($arrival);
+            $nightAdder = '+' . (int) $request->requestVar(self::GET_FILTER_NIGHTS) . ' days';
+            $startDate = date('Y-m-d', $arrivalStamp);
+            $endDate = date('Y-m-d', strtotime($nightAdder, $arrivalStamp));
+
+            $properties = $properties->filter(array(
+                'AvailableStart:LessThanOrEqual' => $startDate,
+                'AvailableEnd:GreaterThanOrEqual' => $endDate
+            ));
+        }
+
+        if ($bedrooms = $request->requestVar(self::GET_FILTER_BEDROOMS)) {
+            $properties = $properties->filter(array(
+                'Bedrooms:GreaterThanOrEqual' => (int) $bedrooms
+            ));
+        }
+
+        if ($bathrooms = $request->requestVar(self::GET_FILTER_BATHROOMS)) {
+            $properties = $properties->filter(array(
+                'Bathrooms:GreaterThanOrEqual' => (int) $bathrooms
+            ));
+        }
+
+        if ($minPrice = $request->requestVar(self::GET_FILTER_MIN_PRICE)) {
+            $properties = $properties->filter(array(
+                'PricePerNight:GreaterThanOrEqual' => (int) $minPrice
+            ));
+        }
+
+        if ($maxPrice = $request->requestVar(self::GET_FILTER_MAX_PRICE)) {
+            $properties = $properties->filter(array(
+                'PricePerNight:LessThanOrEqual' => (int) $maxPrice
+            ));
+        }
+
+        $paginatedProperties = PaginatedList::create(
+            $properties,
+            $request
+        )->setPageLength(self::NUM_PROPERTIES_PER_PAGE)
+            ->setPaginationGetVar('s');
+
+        return $paginatedProperties;
     }
 }
