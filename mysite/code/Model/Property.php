@@ -1,6 +1,7 @@
 <?php
 
 use SilverStripe\Assets\Image;
+use SilverStripe\ORM\FieldType\DBDate;
 use SilverStripe\ORM\Filters\PartialMatchFilter;
 use SilverStripe\Forms\TextField;
 use SilverStripe\ORM\Filters\ExactMatchFilter;
@@ -14,9 +15,20 @@ use SilverStripe\Forms\CheckboxField;
 use SilverStripe\AssetAdmin\Forms\UploadField;
 use SilverStripe\ORM\DataObject;
 
+/**
+ * Class Property
+ *
+ * @property DBDate AvailableStart
+ * @property DBDate AvailableEnd
+ * @property boolean FeaturedOnHomepage
+ * @property String Title
+ * @property String Bedrooms
+ * @property String Bathrooms
+ * @property String PricePerNight
+ * @property String Description
+ */
 class Property extends DataObject
 {
-
     /**
      * @var array
      */
@@ -114,5 +126,25 @@ class Property extends DataObject
 
         $upload->setFolderName('property-photos');
         return $fields;
+    }
+
+    /**
+     * Returns true if the property is available at the current time.
+     *
+     * @return bool
+     */
+    public function isAvailable()
+    {
+        if ($this->AvailableStart && $this->AvailableEnd) {
+            $now = new DateTime(date("Y-m-d"));
+
+            $startDate = new DateTime($this->AvailableStart);
+            $endDate = new DateTime($this->AvailableEnd);
+
+            if ($now >= $startDate && $now <= $endDate) {
+                return true;
+            };
+        }
+        return false;
     }
 }

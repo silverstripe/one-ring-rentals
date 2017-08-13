@@ -52,6 +52,9 @@
 									<li><i class="icon-bedrooms"></i> $Bedrooms</li>
 									<li><i class="icon-bathrooms"></i> $Bathrooms</li>
 								</ul>
+								<% if $isAvailable %>
+									Available now!
+								<% end_if %>
 							</div>
 						</div>
 						<% end_loop %>
