@@ -2,6 +2,7 @@
 
 use SilverStripe\Assets\Image;
 use SilverStripe\Assets\File;
+use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\FieldType\DBDate;
 use SilverStripe\Forms\DateField;
 use SilverStripe\Forms\TextareaField;
@@ -11,6 +12,13 @@ use SilverStripe\Forms\CheckboxSetField;
 use SilverStripe\Forms\DropdownField;
 
 
+/**
+ * Class ArticlePage
+ * @property DateField Date
+ * @property string Teaser
+ * @property string Author
+ * @method DataList Comments
+ */
 class ArticlePage extends Page
 {
     private static $db = array(
