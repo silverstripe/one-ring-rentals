@@ -1,5 +1,7 @@
 <?php
+
 use SilverStripe\Control\Email\Email;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\EmailField;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\FormAction;
@@ -55,6 +57,8 @@ class ArticlePageController extends PageController
             return $this->redirectBack();
         }
 
+        $this->notifyOfNewComment();
+
         $comment = ArticleComment::create();
         $comment->ArticlePageID = $this->ID;
         $form->saveInto($comment);
@@ -63,8 +67,35 @@ class ArticlePageController extends PageController
         $this->getRequest()->getSession()->clear("FormData.{$form->getName()}.data");
         $form->sessionMessage('Thanks for your comment', 'good');
 
-
-
         return $this->redirectBack();
+    }
+
+    /**
+     * Notify all respondents that there's been a new comment!
+     */
+    private function notifyOfNewComment()
+    {
+        // Gather distinct emails to notify from the Article Page.
+        $emails = $this->Comments()->map("Email");
+
+        // get mailer
+        if ($emails->count() > 1) {
+            foreach ($emails as $toEmail => $author) {
+                /**
+                 * @var Email $email
+                 */
+                $email = Injector::inst()->create('SilverStripe\Control\Email\Email');
+                $email->setFrom('admin@one-ring-rentals.com');
+                $email->setTo($toEmail);
+                $email->setSubject('New reply to your comment!');
+                $email->setHTMLTemplate('Email/article-comment-reply.ss');
+                $email->setData([
+                    'Name' => $author,
+                    'Title' => $this->data()->Title,
+                    'Link' => $this->Link()
+                ]);
+                $email->send();
+            }
+        }
     }
 }
