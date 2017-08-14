@@ -1,0 +1,19 @@
+SilverStripe\GraphQL\Controller:
+  schema:
+    queries:
+      readProperties: 'ReadPropertiesQueryCreator'
+    scaffolding:
+      types:
+        Property:
+          fields:
+           ID: 'The unique identifier for a property'
+           Title: 'The property title or name'
+           Bedrooms: 'The number of bedrooms this property has'
+           Bathrooms: 'The number of bathrooms this property has'
+           AvailableStart: 'The date this property is available from'
+           AvailableEnd: 'The date this property is available to'
+           Description: 'A description of the property'
+SilverStripe\GraphQL\Auth\Handler:
+  authenticators:
+    - class: OneRingAuthenticator
+      priority: 30

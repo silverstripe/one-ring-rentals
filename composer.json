@@ -18,10 +18,11 @@
         "silverstripe-themes/simple": "~3.2.0"
     },
     "require-dev": {
-        "phpunit/PHPUnit": "^5.7"
+        "phpunit/PHPUnit": "^5.7",
+        "silverstripe/graphql-devtools": "dev-master"
     },
 	"config": {
-		"process-timeout": 600	
+		"process-timeout": 600
 	},
 	"minimum-stability": "dev"
 }

@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "375246c541625ab783f8d7350ecf207c",
-    "content-hash": "8dc9a67ca117778e6c28bb27d763ad6e",
+    "hash": "70f01b584dfdad0800d79bfb3159426e",
+    "content-hash": "8ba48ced83b8846d4e20369d30da6cd8",
     "packages": [
         {
             "name": "composer/ca-bundle",
@@ -68,16 +68,16 @@
         },
         {
             "name": "composer/installers",
-            "version": "v1.3.0",
+            "version": "v1.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/installers.git",
-                "reference": "79ad876c7498c0bbfe7eed065b8651c93bfd6045"
+                "reference": "9ce17fb70e9a38dd8acff0636a29f5cf4d575c1b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/installers/zipball/79ad876c7498c0bbfe7eed065b8651c93bfd6045",
-                "reference": "79ad876c7498c0bbfe7eed065b8651c93bfd6045",
+                "url": "https://api.github.com/repos/composer/installers/zipball/9ce17fb70e9a38dd8acff0636a29f5cf4d575c1b",
+                "reference": "9ce17fb70e9a38dd8acff0636a29f5cf4d575c1b",
                 "shasum": ""
             },
             "require": {
@@ -123,6 +123,7 @@
                 "Hurad",
                 "ImageCMS",
                 "Kanboard",
+                "Lan Management System",
                 "MODX Evo",
                 "Mautic",
                 "Maya",
@@ -146,6 +147,7 @@
                 "croogo",
                 "dokuwiki",
                 "drupal",
+                "eZ Platform",
                 "elgg",
                 "expressionengine",
                 "fuelphp",
@@ -162,6 +164,7 @@
                 "mediawiki",
                 "modulework",
                 "moodle",
+                "osclass",
                 "phpbb",
                 "piwik",
                 "ppi",
@@ -178,7 +181,7 @@
                 "zend",
                 "zikula"
             ],
-            "time": "2017-04-24 06:37:16"
+            "time": "2017-08-09 07:53:48"
         },
         {
             "name": "embed/embed",
@@ -1674,12 +1677,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/swiftmailer/swiftmailer.git",
-                "reference": "e0ec3fd79fec8f86857c6f1b0ab6a3b69a1ebb15"
+                "reference": "e8a71970b33410591f664f72dba6bd755fa7bf55"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/swiftmailer/swiftmailer/zipball/e0ec3fd79fec8f86857c6f1b0ab6a3b69a1ebb15",
-                "reference": "e0ec3fd79fec8f86857c6f1b0ab6a3b69a1ebb15",
+                "url": "https://api.github.com/repos/swiftmailer/swiftmailer/zipball/e8a71970b33410591f664f72dba6bd755fa7bf55",
+                "reference": "e8a71970b33410591f664f72dba6bd755fa7bf55",
                 "shasum": ""
             },
             "require": {
@@ -1720,7 +1723,7 @@
                 "mail",
                 "mailer"
             ],
-            "time": "2017-08-02 17:03:33"
+            "time": "2017-08-10 12:25:50"
         },
         {
             "name": "symfony/cache",
@@ -2138,12 +2141,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/vlucas/phpdotenv.git",
-                "reference": "7ac2c1cef304f5bd5a8d40750fbcbdd49333b9e5"
+                "reference": "3dd3d8f90e6604e75cca48ec32b033b50b05135b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vlucas/phpdotenv/zipball/7ac2c1cef304f5bd5a8d40750fbcbdd49333b9e5",
-                "reference": "7ac2c1cef304f5bd5a8d40750fbcbdd49333b9e5",
+                "url": "https://api.github.com/repos/vlucas/phpdotenv/zipball/3dd3d8f90e6604e75cca48ec32b033b50b05135b",
+                "reference": "3dd3d8f90e6604e75cca48ec32b033b50b05135b",
                 "shasum": ""
             },
             "require": {
@@ -2180,7 +2183,7 @@
                 "env",
                 "environment"
             ],
-            "time": "2017-02-03 22:05:04"
+            "time": "2017-08-08 20:02:34"
         },
         {
             "name": "webonyx/graphql-php",
@@ -2378,16 +2381,16 @@
         },
         {
             "name": "phpdocumentor/reflection-docblock",
-            "version": "3.2.1",
+            "version": "3.2.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpDocumentor/ReflectionDocBlock.git",
-                "reference": "183824db76118b9dddffc7e522b91fa175f75119"
+                "reference": "4aada1f93c72c35e22fb1383b47fee43b8f1d157"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/183824db76118b9dddffc7e522b91fa175f75119",
-                "reference": "183824db76118b9dddffc7e522b91fa175f75119",
+                "url": "https://api.github.com/repos/phpDocumentor/ReflectionDocBlock/zipball/4aada1f93c72c35e22fb1383b47fee43b8f1d157",
+                "reference": "4aada1f93c72c35e22fb1383b47fee43b8f1d157",
                 "shasum": ""
             },
             "require": {
@@ -2419,7 +2422,7 @@
                 }
             ],
             "description": "With this component, a library can provide support for annotations via DocBlocks or otherwise retrieve information that is embedded in a DocBlock.",
-            "time": "2017-08-04 20:55:59"
+            "time": "2017-08-08 06:39:58"
         },
         {
             "name": "phpdocumentor/type-resolver",
@@ -2786,12 +2789,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "a12edbc808e6e9fa69ce35a1b156e7701d9c5af5"
+                "reference": "552d65f3dd5ff50cda3a2480b9037d0a803d731e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/a12edbc808e6e9fa69ce35a1b156e7701d9c5af5",
-                "reference": "a12edbc808e6e9fa69ce35a1b156e7701d9c5af5",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/552d65f3dd5ff50cda3a2480b9037d0a803d731e",
+                "reference": "552d65f3dd5ff50cda3a2480b9037d0a803d731e",
                 "shasum": ""
             },
             "require": {
@@ -2860,7 +2863,7 @@
                 "testing",
                 "xunit"
             ],
-            "time": "2017-07-30 08:14:43"
+            "time": "2017-08-10 16:53:18"
         },
         {
             "name": "phpunit/phpunit-mock-objects",
@@ -3435,6 +3438,33 @@
             "time": "2016-10-03 07:35:21"
         },
         {
+            "name": "silverstripe/graphql-devtools",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/silverstripe/silverstripe-graphql-devtools.git",
+                "reference": "df940a5453750c3ab8270616f7bff8afed56c3f9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/silverstripe/silverstripe-graphql-devtools/zipball/df940a5453750c3ab8270616f7bff8afed56c3f9",
+                "reference": "df940a5453750c3ab8270616f7bff8afed56c3f9",
+                "shasum": ""
+            },
+            "require": {
+                "silverstripe/graphql": "*"
+            },
+            "type": "silverstripe-module",
+            "autoload": {
+                "psr-4": {
+                    "SilverStripe\\GraphQLDevTools\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "description": "Tools to help developers building new applications on SilverStripe’s GraphQL API",
+            "time": "2017-03-22 01:04:20"
+        },
+        {
             "name": "webmozart/assert",
             "version": "dev-master",
             "source": {
@@ -3488,7 +3518,8 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
-        "silverstripe/graphql": 0
+        "silverstripe/graphql": 0,
+        "silverstripe/graphql-devtools": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
