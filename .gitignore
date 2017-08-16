@@ -15,3 +15,16 @@ lumberjack/
 reports/
 siteconfig/
 tagfield/
+.env
+asset-admin/
+campaign-admin/
+graphql-devtools/
+graphql/
+mysite/code/GraphQL/PaginatedReadPropertiesQueryCreator.php
+mysite/code/GraphQL/PropertyTypeCreator.php
+mysite/code/GraphQL/ReadResolver.php
+mysite/code/GraphQL/RegionTypeCreator.php
+silverstripe-admin/
+silverstripe-assets/
+silverstripe-errorpage/
+versioned/
