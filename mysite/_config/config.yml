@@ -4,6 +4,47 @@ SilverStripe\SiteConfig\SiteConfig:
   extensions:
     - SiteConfigExtension
 ---
+SilverStripe\Core\Injector\Injector:
+  Psr\Log\LoggerInterface:
+    calls:
+      pushDisplayErrorHandler: [ pushHandler, [ %$DisplayErrorHandler ]]
+  DisplayErrorHandler:
+    class: SilverStripe\Logging\HTTPOutputHandler
+    constructor:
+      - "notice"
+    properties:
+      Formatter: %$SilverStripe\Logging\DetailedErrorFormatter
+      CLIFormatter: %$SilverStripe\Logging\DetailedErrorFormatter
+---
+Name: live-errors
+Except:
+  environment: dev
+---
+SilverStripe\Core\Injector\Injector:
+  Psr\Log\LoggerInterface:
+    calls:
+      pushFileLogHandler: [ pushHandler, [ %$LogFileHandler ]]
+      pushDisplayErrorHandler: [ pushHandler, [ %$DisplayErrorHandler ]]
+  LogFileHandler:
+    class: Monolog\Handler\StreamHandler
+    constructor:
+      - "../silverstripe.log"
+      - "notice"
+    properties:
+      Formatter: %$Monolog\Formatter\HtmlFormatter
+      ContentType: text/html
+  DisplayErrorHandler:
+    class: SilverStripe\Logging\HTTPOutputHandler
+    constructor:
+      - "error"
+    properties:
+      Formatter: %$SilverStripe\Logging\DebugViewFriendlyErrorFormatter
+  SilverStripe\Logging\DebugViewFriendlyErrorFormatter:
+    class: SilverStripe\Logging\DebugViewFriendlyErrorFormatter
+    properties:
+      Title: "There has been an error"
+      Body: "The website server has not been able to respond to your request"
+---
 Only:
   environment: dev
 ---

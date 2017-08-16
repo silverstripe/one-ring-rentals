@@ -15,3 +15,10 @@ lumberjack/
 reports/
 siteconfig/
 tagfield/
+.env
+asset-admin/
+campaign-admin/
+silverstripe-admin/
+silverstripe-assets/
+silverstripe-errorpage/
+versioned/
